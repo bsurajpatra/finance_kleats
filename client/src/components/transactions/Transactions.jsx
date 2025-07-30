@@ -12,6 +12,15 @@ const Transactions = () => {
   const [typeFilter, setTypeFilter] = useState('all'); // all, debits, credits
   const [showFilter, setShowFilter] = useState(false);
   const filterRef = useRef(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState({
+    date: '',
+    amount: '',
+    description: '',
+    type: 'credit',
+    notes: ''
+  });
+  const [modalError, setModalError] = useState('');
 
   useEffect(() => {
     fetchTransactions();
@@ -126,6 +135,47 @@ const Transactions = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Add Transaction Handler
+  const handleModalChange = (e) => {
+    const { name, value } = e.target;
+    setModalData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddTransaction = async (e) => {
+    e.preventDefault();
+    setModalError('');
+    if (!modalData.date || !modalData.amount || !modalData.type) {
+      setModalError('Date, amount, and type are required.');
+      return;
+    }
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(API_ENDPOINTS.TRANSACTIONS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          date: modalData.date,
+          amount: Number(modalData.amount),
+          description: modalData.description,
+          type: modalData.type,
+          notes: modalData.notes
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to add transaction');
+      }
+      setShowModal(false);
+      setModalData({ date: '', amount: '', description: '', type: 'credit', notes: '' });
+      fetchTransactions();
+    } catch (err) {
+      setModalError(err.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="transactions-container">
@@ -155,6 +205,13 @@ const Transactions = () => {
       <div className="transactions-header">
         <h2>All Transactions</h2>
         <div style={{ display: 'flex', alignItems: 'center' }}>
+          {/* New Button */}
+          <button
+            className="transactions-new-btn"
+            onClick={() => setShowModal(true)}
+          >
+            New
+          </button>
           {/* Filter Dropdown Button */}
           <div className="transactions-filter-dropdown-wrapper" ref={filterRef}>
             <button
@@ -239,6 +296,45 @@ const Transactions = () => {
           </button>
         </div>
       </div>
+
+      {/* Modal for New Transaction */}
+      {showModal && (
+        <div className="transactions-modal-backdrop">
+          <div className="transactions-modal">
+            <h3>Add New Transaction</h3>
+            <form onSubmit={handleAddTransaction} className="transactions-modal-form">
+              <label>
+                Date:
+                <input type="date" name="date" value={modalData.date} onChange={handleModalChange} required />
+              </label>
+              <label>
+                Amount:
+                <input type="number" name="amount" value={modalData.amount} onChange={handleModalChange} min="0.01" step="0.01" required />
+              </label>
+              <label>
+                Description:
+                <input type="text" name="description" value={modalData.description} onChange={handleModalChange} />
+              </label>
+              <label>
+                Transaction Type:
+                <select name="type" value={modalData.type} onChange={handleModalChange} required>
+                  <option value="credit">Credit</option>
+                  <option value="debit">Debit</option>
+                </select>
+              </label>
+              <label>
+                Notes:
+                <textarea name="notes" value={modalData.notes} onChange={handleModalChange} />
+              </label>
+              {modalError && <div className="transactions-modal-error">{modalError}</div>}
+              <div className="transactions-modal-actions">
+                <button type="submit" className="transactions-modal-submit">Add</button>
+                <button type="button" className="transactions-modal-cancel" onClick={() => setShowModal(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {filteredTransactions.length === 0 ? (
         <div className="no-transactions">

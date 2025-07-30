@@ -367,3 +367,108 @@
 .transactions-export-btn:hover {
   background: #2f855a;
 } 
+
+.transactions-new-btn {
+  background: #3182ce;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-right: 1rem;
+  transition: background 0.2s;
+}
+.transactions-new-btn:hover {
+  background: #225ea8;
+}
+.transactions-modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.25);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.transactions-modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  padding: 2rem 2.5rem;
+  min-width: 340px;
+  max-width: 95vw;
+  position: relative;
+}
+.transactions-modal h3 {
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.3rem;
+  color: #2d3748;
+  text-align: center;
+}
+.transactions-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.transactions-modal-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  color: #444;
+  gap: 0.3rem;
+}
+.transactions-modal-form input,
+.transactions-modal-form select,
+.transactions-modal-form textarea {
+  padding: 0.5rem 0.7rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+.transactions-modal-form textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+.transactions-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+.transactions-modal-submit {
+  background: #38a169;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.transactions-modal-submit:hover {
+  background: #2f855a;
+}
+.transactions-modal-cancel {
+  background: #e2e8f0;
+  color: #333;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.transactions-modal-cancel:hover {
+  background: #cbd5e1;
+}
+.transactions-modal-error {
+  color: #e53e3e;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  text-align: center;
+} 
