@@ -9,7 +9,7 @@ const Transactions = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all'); // all, debits, credits
+  const [typeFilter, setTypeFilter] = useState('all'); 
   const [showFilter, setShowFilter] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({
@@ -22,8 +22,7 @@ const Transactions = () => {
   const [modalError, setModalError] = useState('');
   const [isAddingTransaction, setIsAddingTransaction] = useState(false);
   
-  // Inline editing state
-  const [editingCell, setEditingCell] = useState(null); // { rowId, field, value }
+  const [editingCell, setEditingCell] = useState(null); 
   const [editValue, setEditValue] = useState('');
 
   const filterRef = useRef(null);
@@ -32,7 +31,6 @@ const Transactions = () => {
     fetchTransactions();
   }, []);
 
-  // Close filter dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (filterRef.current && !filterRef.current.contains(event.target)) {
@@ -86,7 +84,6 @@ const Transactions = () => {
     return 'neutral';
   };
 
-  // Inline editing functions
   const handleCellDoubleClick = (rowId, field, value) => {
     setEditingCell({ rowId, field, value });
     setEditValue(value);
@@ -99,7 +96,6 @@ const Transactions = () => {
   const handleSaveEdit = async () => {
     if (!editingCell) return;
     
-    // Store original data for rollback
     const originalTransaction = transactions.find(tx => tx.id === editingCell.rowId);
     const originalTransactions = [...transactions];
     
@@ -107,7 +103,6 @@ const Transactions = () => {
       const token = localStorage.getItem('token');
       let updateData = { [editingCell.field]: editValue };
       
-      // Special handling for credit/debit fields
       if (editingCell.field === 'credit') {
         updateData = { 
           credit: Number(editValue) || 0, 
@@ -120,18 +115,15 @@ const Transactions = () => {
         };
       }
       
-      // Optimistic update - update UI immediately
       setTransactions(prev => prev.map(tx => 
         tx.id === editingCell.rowId 
           ? { ...tx, ...updateData }
           : tx
       ));
       
-      // Clear editing state immediately for better UX
       setEditingCell(null);
       setEditValue('');
       
-      // Background sync with server
       const response = await fetch(`${API_ENDPOINTS.TRANSACTIONS}/${editingCell.rowId}`, {
         method: 'PUT',
         headers: {
@@ -146,7 +138,6 @@ const Transactions = () => {
         throw new Error(errorData.error || 'Failed to update transaction');
       }
       
-      // Success - fetch fresh data in background to ensure consistency
       setTimeout(() => {
         fetchTransactions();
       }, 100);
@@ -154,10 +145,8 @@ const Transactions = () => {
     } catch (err) {
       console.error('Error updating transaction:', err);
       
-      // Rollback to original state
       setTransactions(originalTransactions);
       
-      // Show error message
       alert(`Failed to update transaction: ${err.message}`);
     }
   };
@@ -167,7 +156,6 @@ const Transactions = () => {
     setEditValue('');
   };
 
-  // Filter and sort transactions
   const filteredTransactions = transactions
     .filter(tx => {
       const txDate = new Date(tx.date);
@@ -184,7 +172,6 @@ const Transactions = () => {
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
 
-  // Export filtered transactions to CSV
   const exportToCSV = () => {
     if (filteredTransactions.length === 0) return;
     const headers = [
@@ -222,7 +209,6 @@ const Transactions = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Add Transaction Handler
   const handleModalChange = (e) => {
     const { name, value } = e.target;
     setModalData((prev) => ({ ...prev, [name]: value }));
@@ -236,7 +222,6 @@ const Transactions = () => {
       return;
     }
     
-    // Store original transactions for rollback
     const originalTransactions = [...transactions];
     
     try {
@@ -250,25 +235,21 @@ const Transactions = () => {
         notes: modalData.notes
       };
       
-      // Optimistic update - add temporary transaction to UI with loading state
       const tempTransaction = {
         id: `temp-${Date.now()}`,
         ...newTransactionData,
         credit: newTransactionData.type === 'credit' ? newTransactionData.amount : 0,
         debit: newTransactionData.type === 'debit' ? newTransactionData.amount : 0,
-        previous_balance: 0, // Will be calculated by server
-        remaining_balance: 0, // Will be calculated by server
-        isPending: true // Flag for loading state
+        previous_balance: 0, 
+        remaining_balance: 0, 
+        isPending: true 
       };
       
-      // Add to UI immediately
       setTransactions(prev => [...prev, tempTransaction]);
       
-      // Close modal immediately for better UX
       setShowModal(false);
       setModalData({ date: '', amount: '', description: '', type: 'credit', notes: '' });
       
-      // Background sync with server
       const res = await fetch(API_ENDPOINTS.TRANSACTIONS, {
         method: 'POST',
         headers: {
@@ -283,10 +264,8 @@ const Transactions = () => {
         throw new Error(err.error || 'Failed to add transaction');
       }
       
-      // Success - remove temporary transaction and fetch fresh data
       setTransactions(prev => prev.filter(tx => tx.id !== tempTransaction.id));
       
-      // Fetch fresh data in background to get proper balances
       setTimeout(() => {
         fetchTransactions();
       }, 100);
@@ -294,10 +273,8 @@ const Transactions = () => {
     } catch (err) {
       console.error('Error adding transaction:', err);
       
-      // Rollback to original state
       setTransactions(originalTransactions);
       
-      // Reopen modal with error
       setShowModal(true);
       setModalError(err.message);
     } finally {
@@ -334,14 +311,12 @@ const Transactions = () => {
       <div className="transactions-header">
         <h2>All Transactions</h2>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          {/* New Button */}
           <button
             className="transactions-new-btn"
             onClick={() => setShowModal(true)}
           >
             New
           </button>
-          {/* Filter Dropdown Button */}
           <div className="transactions-filter-dropdown-wrapper" ref={filterRef}>
             <button
               className="transactions-filter-btn"
@@ -426,7 +401,6 @@ const Transactions = () => {
         </div>
       </div>
 
-      {/* Modal for New Transaction */}
       {showModal && (
         <div className="transactions-modal-backdrop">
           <div className="transactions-modal">

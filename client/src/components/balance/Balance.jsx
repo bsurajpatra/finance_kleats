@@ -51,7 +51,7 @@ const Balance = () => {
   };
 
   const getRecentTransactions = () => {
-    return transactions.slice(-5).reverse(); // Last 5 transactions, newest first
+    return transactions.slice(-5).reverse(); 
   };
 
   if (loading) {
@@ -83,9 +83,7 @@ const Balance = () => {
 
   return (
     <div className="balance-container">
-      {/* Balance Display with Graphics */}
       <div className="balance-display">
-        {/* Background Shapes */}
         <div className="balance-shapes">
           <div className="shape circle-1"></div>
           <div className="shape circle-2"></div>
@@ -93,7 +91,6 @@ const Balance = () => {
           <div className="shape square"></div>
         </div>
         
-        {/* Main Balance Card */}
         <div className="balance-card">
           <div className="balance-header">
             <div className="balance-icon">
@@ -125,7 +122,6 @@ const Balance = () => {
         </div>
       </div>
 
-      {/* Recent Transactions */}
       <div className="recent-transactions">
         <div className="transactions-header">
           <h3>

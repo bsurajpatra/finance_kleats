@@ -25,8 +25,6 @@
 }
 
 
-
-/* Loading State */
 .loading-spinner {
   display: flex;
   flex-direction: column;
@@ -51,7 +49,6 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Error State */
 .error-message {
   text-align: center;
   padding: 2rem;
@@ -74,14 +71,12 @@
   background: #d32f2f;
 }
 
-/* No Transactions */
 .no-transactions {
   text-align: center;
   padding: 3rem;
   color: #666;
 }
 
-/* Table Styles */
 .transactions-table-container {
   overflow-x: auto;
   border-radius: 8px;
@@ -144,7 +139,6 @@
   background: #fff0f0;
 }
 
-/* S.No. column color coding */
 .transaction-row.credit .serial-number {
   background: #f8fff8;
   color: #2e7d32;
@@ -165,7 +159,6 @@
   color: #b71c1c;
 }
 
-/* Column Styles */
 .serial-number {
   font-weight: 600;
   text-align: center;
@@ -211,7 +204,6 @@
   text-align: left;
 }
 
-/* Summary */
 .transactions-summary {
   margin-top: 2rem;
   padding-top: 1rem;
@@ -225,7 +217,6 @@
   margin: 0.25rem 0;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .transactions-container {
     padding: 1rem;
@@ -243,7 +234,6 @@
     font-size: 0.85rem;
   }
   
-  /* Hide less important columns on mobile */
   .transactions-table th:nth-child(6),
   .transactions-table td:nth-child(6),
   .transactions-table th:nth-child(7),
@@ -524,7 +514,6 @@
   background: #c53030;
 } 
 
-/* Pending transaction styles */
 .pending-transaction {
   opacity: 0.7;
   background-color: #f8f9fa;
@@ -563,7 +552,6 @@
   51%, 100% { opacity: 0.3; }
 }
 
-/* Disabled button styles */
 .transactions-modal-submit:disabled,
 .transactions-modal-cancel:disabled {
   opacity: 0.6;
@@ -577,7 +565,6 @@
   transform: none;
 }
 
-/* Loading state for modal */
 .transactions-modal-submit:disabled {
   position: relative;
 }

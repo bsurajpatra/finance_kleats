@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Signin from './components/signin/Signin';
 import Dashboard from './components/dashboard/Dashboard';
-import Transactions from './components/transactions/Transactions';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));

@@ -68,7 +68,7 @@
   min-width: 480px;
   max-width: 680px;
   transform: translateX(-160px);
-  /* Both panels now move left even more */
+
 }
 
 .signin-title {

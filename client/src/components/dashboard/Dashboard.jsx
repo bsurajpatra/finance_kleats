@@ -8,7 +8,6 @@ import Payouts from '../payouts/Payouts';
 const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
   return (
     <div className="dashboard-container">
-      {/* Header */}
       <header className="dashboard-header">
         <div className="header-left">
           <img src={logo} alt="KL Eats Logo" className="header-logo" />
@@ -21,7 +20,6 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
         </div>
       </header>
 
-      {/* Navigation */}
       <nav className="dashboard-nav">
         <button 
           className={`nav-tab ${activeTab === 'balance' ? 'active' : ''}`}
@@ -43,7 +41,6 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
         </button>
       </nav>
 
-      {/* Main Content */}
       <main className="dashboard-main">
         {activeTab === 'balance' && (
           <Balance />
@@ -58,7 +55,6 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
         )}
       </main>
       
-      {/* Footer */}
       <footer className="dashboard-footer">
         <div>KL Eats Finance - Copyright © {new Date().getFullYear()} - Licensed under GPL</div>
       </footer>

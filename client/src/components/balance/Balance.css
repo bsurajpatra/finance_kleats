@@ -8,13 +8,11 @@
   margin: 0 auto;
 }
 
-/* Balance Display with Graphics */
 .balance-display {
   position: relative;
   margin-bottom: 2rem;
 }
 
-/* Animated Background Shapes */
 .balance-shapes {
   position: absolute;
   top: 0;
@@ -192,7 +190,6 @@
   text-align: center;
 }
 
-/* Recent Transactions */
 .recent-transactions {
   margin-top: 2rem;
 }
@@ -311,7 +308,6 @@
   color: #f44336;
 }
 
-/* Empty State */
 .no-transactions {
   text-align: center;
   padding: 3rem;
@@ -332,7 +328,6 @@
   height: 100%;
 }
 
-/* Loading State */
 .loading-spinner {
   display: flex;
   flex-direction: column;
@@ -357,7 +352,6 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Error State */
 .error-message {
   text-align: center;
   padding: 2rem;
@@ -380,7 +374,6 @@
   background: #d32f2f;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .balance-container {
     padding: 1rem;

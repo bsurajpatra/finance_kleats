@@ -11,7 +11,6 @@ export async function getAllTransactions() {
 
 export async function createTransaction({ date, description, amount, type, notes }) {
   try {
-    // Get the latest transaction for balance calculation
     const { data: latest, error: latestError } = await supabase
       .from('finance_transactions')
       .select('remaining_balance')
@@ -43,7 +42,6 @@ export async function createTransaction({ date, description, amount, type, notes
       notes
     };
     
-    // Insert the new transaction
     const { data, error } = await supabase
       .from('finance_transactions')
       .insert([transactionData])
@@ -51,7 +49,6 @@ export async function createTransaction({ date, description, amount, type, notes
     
     if (error) throw error;
     
-    // Start background process to update subsequent transactions if needed
     updateSubsequentBalancesAsync(date, remaining_balance).catch(err => {
       console.error('Background balance update failed:', err);
     });
@@ -62,7 +59,6 @@ export async function createTransaction({ date, description, amount, type, notes
   }
 }
 
-// Async function to update subsequent transaction balances
 async function updateSubsequentBalancesAsync(currentDate, currentBalance) {
   try {
     const { data: subsequentTxs, error } = await supabase
@@ -75,7 +71,6 @@ async function updateSubsequentBalancesAsync(currentDate, currentBalance) {
     
     if (subsequentTxs.length === 0) return;
     
-    // Process in batches
     const batchSize = 10;
     let runningBalance = currentBalance;
     
@@ -96,7 +91,6 @@ async function updateSubsequentBalancesAsync(currentDate, currentBalance) {
         runningBalance = newRemainingBalance;
       }
       
-      // Small delay between batches
       if (i + batchSize < subsequentTxs.length) {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
@@ -108,15 +102,12 @@ async function updateSubsequentBalancesAsync(currentDate, currentBalance) {
 }
 
 export async function updateTransaction(id, updates) {
-  // If credit or debit is being updated, we need to recalculate balances
   if (updates.credit !== undefined || updates.debit !== undefined) {
-    // Start balance recalculation in background
     recalculateBalancesAsync(id, updates).catch(err => {
       console.error('Background balance recalculation failed:', err);
     });
   }
   
-  // Return immediately with the update
   const { data, error } = await supabase
     .from('finance_transactions')
     .update(updates)
@@ -128,10 +119,8 @@ export async function updateTransaction(id, updates) {
   return data;
 }
 
-// Async function to handle balance recalculation in background
 async function recalculateBalancesAsync(id, updates) {
   try {
-    // Get the current transaction to find the previous transaction's balance
     const { data: currentTx, error: currentError } = await supabase
       .from('finance_transactions')
       .select('*')
@@ -140,7 +129,6 @@ async function recalculateBalancesAsync(id, updates) {
     
     if (currentError) throw currentError;
     
-    // Find the previous transaction (by date, excluding current one)
     const { data: previousTx, error: prevError } = await supabase
       .from('finance_transactions')
       .select('remaining_balance')
@@ -153,12 +141,10 @@ async function recalculateBalancesAsync(id, updates) {
     
     const previous_balance = previousTx?.remaining_balance || 0;
     
-    // Calculate new remaining balance based on updated credit/debit
     const credit = updates.credit !== undefined ? updates.credit : currentTx.credit;
     const debit = updates.debit !== undefined ? updates.debit : currentTx.debit;
     const remaining_balance = previous_balance + credit - debit;
     
-    // Update current transaction with recalculated balance
     await supabase
       .from('finance_transactions')
       .update({
@@ -167,7 +153,6 @@ async function recalculateBalancesAsync(id, updates) {
       })
       .eq('id', id);
     
-    // Update all subsequent transactions' balances in batches
     const { data: subsequentTxs, error: subError } = await supabase
       .from('finance_transactions')
       .select('*')
@@ -176,12 +161,10 @@ async function recalculateBalancesAsync(id, updates) {
     
     if (subError) throw subError;
     
-    // Process in batches for better performance
     const batchSize = 10;
     for (let i = 0; i < subsequentTxs.length; i += batchSize) {
       const batch = subsequentTxs.slice(i, i + batchSize);
       
-      // Update batch
       for (let j = 0; j < batch.length; j++) {
         const tx = batch[j];
         const prevTx = j === 0 && i === 0 ? null : 
@@ -198,7 +181,6 @@ async function recalculateBalancesAsync(id, updates) {
           .eq('id', tx.id);
       }
       
-      // Small delay to prevent overwhelming the database
       if (i + batchSize < subsequentTxs.length) {
         await new Promise(resolve => setTimeout(resolve, 10));
       }
