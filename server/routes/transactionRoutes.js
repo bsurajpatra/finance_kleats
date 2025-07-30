@@ -3,6 +3,6 @@ import { fetchTransactions } from '../controllers/transactionController.js'
 
 const router = express.Router()
 
-router.get('/transactions', fetchTransactions)
+router.get('/', fetchTransactions)
 
 export default router 

@@ -4,7 +4,7 @@ export async function getAllTransactions() {
   const { data, error } = await supabase
     .from('finance_transactions')
     .select('*')
-    .order('date', { ascending: true }) // order by date
+    .order('date', { ascending: true }) 
   if (error) throw error
   return data
 } 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Balance.css';
-import { API_ENDPOINTS } from '../../config/api.js';
+import { API_ENDPOINTS, authFetch } from '../../config/api.js';
 
 const Balance = () => {
   const [transactions, setTransactions] = useState([]);
@@ -14,7 +14,7 @@ const Balance = () => {
   const fetchTransactions = async () => {
     try {
       setLoading(true);
-      const response = await fetch(API_ENDPOINTS.TRANSACTIONS);
+      const response = await authFetch(API_ENDPOINTS.TRANSACTIONS);
       
       if (!response.ok) {
         throw new Error('Failed to fetch transactions');

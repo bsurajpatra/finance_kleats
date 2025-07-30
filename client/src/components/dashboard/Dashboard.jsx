@@ -3,6 +3,7 @@ import './Dashboard.css';
 import logo from '../../assets/logo.png';
 import Transactions from '../transactions/Transactions';
 import Balance from '../balance/Balance';
+import Payouts from '../payouts/Payouts';
 
 const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
   return (
@@ -53,10 +54,7 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
         )}
 
         {activeTab === 'payouts' && (
-          <div className="payouts-content">
-            <h2>Payouts</h2>
-            <p>Payment Gateway Payouts will be listed here. This section will show payout history, pending payouts, and payout management features.</p>
-          </div>
+          <Payouts />
         )}
       </main>
       

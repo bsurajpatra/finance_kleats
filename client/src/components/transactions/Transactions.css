@@ -253,3 +253,117 @@
     display: none;
   }
 } 
+
+.transactions-filters {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.transactions-filters label {
+  font-weight: 500;
+  color: #444;
+}
+.transactions-filters input[type='date'],
+.transactions-filters select {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+} 
+
+.transactions-type-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 1.5rem;
+}
+.transactions-type-filter label {
+  font-weight: 500;
+  color: #444;
+  cursor: pointer;
+}
+.transactions-type-filter input[type='radio'] {
+  margin-right: 0.3rem;
+} 
+
+.transactions-filter-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-left: 1rem;
+}
+.transactions-filter-btn {
+  background: #f3f4f6;
+  color: #333;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.transactions-filter-btn:hover {
+  background: #e6f7ff;
+}
+.transactions-filter-dropdown {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  min-width: 320px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  z-index: 10;
+  padding: 1.2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.filter-section {
+  margin-bottom: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.filter-section label,
+.transactions-type-filter label {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.2rem;
+  display: flex;
+  align-items: center;
+}
+.filter-section select,
+.filter-section input[type='date'] {
+  margin-left: 0.5rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+.transactions-type-filter {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin-left: 0;
+  margin-top: 0.5rem;
+}
+.transactions-type-filter input[type='radio'] {
+  margin-right: 0.3rem;
+} 
+
+.transactions-export-btn {
+  background: #38a169;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-left: 1rem;
+  transition: background 0.2s;
+}
+.transactions-export-btn:hover {
+  background: #2f855a;
+} 

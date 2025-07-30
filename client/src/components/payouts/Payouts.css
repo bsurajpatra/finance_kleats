@@ -1,0 +1,70 @@
+.payouts-container {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 700px;
+}
+
+.payouts-container h2 {
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
+  color: #2d3748;
+  text-align: center;
+}
+
+.payouts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fafbfc;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+}
+
+.payouts-table th, .payouts-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.payouts-table th {
+  background: #f3f4f6;
+  color: #4a5568;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.payouts-table tr:nth-child(even) {
+  background: #f7fafc;
+}
+
+.payouts-table tr:hover {
+  background: #e6f7ff;
+}
+
+.payouts-table td {
+  color: #2d3748;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.error-message {
+  color: #e53e3e;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  padding: 1rem;
+  border-radius: 6px;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .payouts-container {
+    padding: 1rem;
+    max-width: 100%;
+  }
+  .payouts-table th, .payouts-table td {
+    padding: 0.5rem;
+    font-size: 0.95rem;
+  }
+}

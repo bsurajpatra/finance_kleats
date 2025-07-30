@@ -3,17 +3,19 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import transactionRoutes from './routes/transactionRoutes.js'
 import supabase from './supabase/client.js'
+import authRoutes from './routes/authRoutes.js';
+import { verifyJWT } from './controllers/authController.js';
+import payoutRoutes from './routes/payoutRoutes.js';
 
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT
 
 // Middleware
 app.use(cors())
 app.use(express.json())
 
-// Database connection status check
 async function checkDatabaseConnection() {
   try {
     const { data, error } = await supabase
@@ -34,10 +36,11 @@ async function checkDatabaseConnection() {
   }
 }
 
-// Routes
-app.use('/api', transactionRoutes)
+app.use('/api/auth', authRoutes);
 
-// Health check endpoint with DB status
+app.use('/api/transactions', verifyJWT, transactionRoutes);
+app.use('/api/payouts', payoutRoutes);
+
 app.get('/health', async (req, res) => {
   const dbStatus = await checkDatabaseConnection()
   
@@ -54,6 +57,5 @@ app.listen(PORT, async () => {
   console.log(`📊 API available at http://localhost:${PORT}/api`)
   console.log(`🏥 Health check at http://localhost:${PORT}/health`)
   
-  // Check database connection on startup
   await checkDatabaseConnection()
 }) 
