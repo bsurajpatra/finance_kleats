@@ -1,10 +1,11 @@
 import express from 'express'
-import { fetchTransactions, addTransaction } from '../controllers/transactionController.js'
+import { fetchTransactions, addTransaction, updateTransactionController } from '../controllers/transactionController.js'
 import { verifyJWT } from '../controllers/authController.js'
 
 const router = express.Router()
 
 router.get('/', fetchTransactions)
 router.post('/', verifyJWT, addTransaction)
+router.put('/:id', verifyJWT, updateTransactionController)
 
 export default router 

@@ -11,7 +11,6 @@ const Transactions = () => {
   const [endDate, setEndDate] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // all, debits, credits
   const [showFilter, setShowFilter] = useState(false);
-  const filterRef = useRef(null);
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({
     date: '',
@@ -21,6 +20,13 @@ const Transactions = () => {
     notes: ''
   });
   const [modalError, setModalError] = useState('');
+  const [isAddingTransaction, setIsAddingTransaction] = useState(false);
+  
+  // Inline editing state
+  const [editingCell, setEditingCell] = useState(null); // { rowId, field, value }
+  const [editValue, setEditValue] = useState('');
+
+  const filterRef = useRef(null);
 
   useEffect(() => {
     fetchTransactions();
@@ -78,6 +84,87 @@ const Transactions = () => {
     if (credit > 0) return 'credit';
     if (debit > 0) return 'debit';
     return 'neutral';
+  };
+
+  // Inline editing functions
+  const handleCellDoubleClick = (rowId, field, value) => {
+    setEditingCell({ rowId, field, value });
+    setEditValue(value);
+  };
+
+  const handleEditChange = (e) => {
+    setEditValue(e.target.value);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCell) return;
+    
+    // Store original data for rollback
+    const originalTransaction = transactions.find(tx => tx.id === editingCell.rowId);
+    const originalTransactions = [...transactions];
+    
+    try {
+      const token = localStorage.getItem('token');
+      let updateData = { [editingCell.field]: editValue };
+      
+      // Special handling for credit/debit fields
+      if (editingCell.field === 'credit') {
+        updateData = { 
+          credit: Number(editValue) || 0, 
+          debit: 0 
+        };
+      } else if (editingCell.field === 'debit') {
+        updateData = { 
+          debit: Number(editValue) || 0, 
+          credit: 0 
+        };
+      }
+      
+      // Optimistic update - update UI immediately
+      setTransactions(prev => prev.map(tx => 
+        tx.id === editingCell.rowId 
+          ? { ...tx, ...updateData }
+          : tx
+      ));
+      
+      // Clear editing state immediately for better UX
+      setEditingCell(null);
+      setEditValue('');
+      
+      // Background sync with server
+      const response = await fetch(`${API_ENDPOINTS.TRANSACTIONS}/${editingCell.rowId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update transaction');
+      }
+      
+      // Success - fetch fresh data in background to ensure consistency
+      setTimeout(() => {
+        fetchTransactions();
+      }, 100);
+      
+    } catch (err) {
+      console.error('Error updating transaction:', err);
+      
+      // Rollback to original state
+      setTransactions(originalTransactions);
+      
+      // Show error message
+      alert(`Failed to update transaction: ${err.message}`);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCell(null);
+    setEditValue('');
   };
 
   // Filter and sort transactions
@@ -148,31 +235,73 @@ const Transactions = () => {
       setModalError('Date, amount, and type are required.');
       return;
     }
+    
+    // Store original transactions for rollback
+    const originalTransactions = [...transactions];
+    
     try {
+      setIsAddingTransaction(true);
       const token = localStorage.getItem('token');
+      const newTransactionData = {
+        date: modalData.date,
+        amount: Number(modalData.amount),
+        description: modalData.description,
+        type: modalData.type,
+        notes: modalData.notes
+      };
+      
+      // Optimistic update - add temporary transaction to UI with loading state
+      const tempTransaction = {
+        id: `temp-${Date.now()}`,
+        ...newTransactionData,
+        credit: newTransactionData.type === 'credit' ? newTransactionData.amount : 0,
+        debit: newTransactionData.type === 'debit' ? newTransactionData.amount : 0,
+        previous_balance: 0, // Will be calculated by server
+        remaining_balance: 0, // Will be calculated by server
+        isPending: true // Flag for loading state
+      };
+      
+      // Add to UI immediately
+      setTransactions(prev => [...prev, tempTransaction]);
+      
+      // Close modal immediately for better UX
+      setShowModal(false);
+      setModalData({ date: '', amount: '', description: '', type: 'credit', notes: '' });
+      
+      // Background sync with server
       const res = await fetch(API_ENDPOINTS.TRANSACTIONS, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({
-          date: modalData.date,
-          amount: Number(modalData.amount),
-          description: modalData.description,
-          type: modalData.type,
-          notes: modalData.notes
-        })
+        body: JSON.stringify(newTransactionData)
       });
+      
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.error || 'Failed to add transaction');
       }
-      setShowModal(false);
-      setModalData({ date: '', amount: '', description: '', type: 'credit', notes: '' });
-      fetchTransactions();
+      
+      // Success - remove temporary transaction and fetch fresh data
+      setTransactions(prev => prev.filter(tx => tx.id !== tempTransaction.id));
+      
+      // Fetch fresh data in background to get proper balances
+      setTimeout(() => {
+        fetchTransactions();
+      }, 100);
+      
     } catch (err) {
+      console.error('Error adding transaction:', err);
+      
+      // Rollback to original state
+      setTransactions(originalTransactions);
+      
+      // Reopen modal with error
+      setShowModal(true);
       setModalError(err.message);
+    } finally {
+      setIsAddingTransaction(false);
     }
   };
 
@@ -328,8 +457,21 @@ const Transactions = () => {
               </label>
               {modalError && <div className="transactions-modal-error">{modalError}</div>}
               <div className="transactions-modal-actions">
-                <button type="submit" className="transactions-modal-submit">Add</button>
-                <button type="button" className="transactions-modal-cancel" onClick={() => setShowModal(false)}>Cancel</button>
+                <button 
+                  type="submit" 
+                  className="transactions-modal-submit"
+                  disabled={isAddingTransaction}
+                >
+                  {isAddingTransaction ? 'Adding...' : 'Add'}
+                </button>
+                <button 
+                  type="button" 
+                  className="transactions-modal-cancel" 
+                  onClick={() => setShowModal(false)}
+                  disabled={isAddingTransaction}
+                >
+                  Cancel
+                </button>
               </div>
             </form>
           </div>
@@ -358,21 +500,127 @@ const Transactions = () => {
             <tbody>
               {filteredTransactions.map((transaction, index) => {
                 const transactionType = getTransactionType(transaction.credit, transaction.debit);
+                const isEditing = editingCell?.rowId === transaction.id;
+                const isPending = transaction.isPending;
+                
                 return (
-                  <tr key={transaction.id} className={`transaction-row ${transactionType}`}>
-                    <td className="serial-number">{index + 1}</td>
-                    <td>{formatDate(transaction.date)}</td>
-                    <td className="description">{transaction.description || 'N/A'}</td>
-                    <td className={`amount credit ${transaction.credit > 0 ? 'positive' : ''}`}>
-                      {transaction.credit > 0 ? formatAmount(transaction.credit) : '-'}
-                    </td>
-                    <td className={`amount debit ${transaction.debit > 0 ? 'negative' : ''}`}>
-                      {transaction.debit > 0 ? formatAmount(transaction.debit) : '-'}
-                    </td>
-                    <td className="balance">{formatAmount(transaction.previous_balance)}</td>
-                    <td className="balance">{formatAmount(transaction.remaining_balance)}</td>
-                    <td className="notes">{transaction.notes || '-'}</td>
-                  </tr>
+                  <React.Fragment key={transaction.id}>
+                    <tr className={`transaction-row ${transactionType} ${isPending ? 'pending-transaction' : ''}`}>
+                      <td className="serial-number">{index + 1}</td>
+                      <td 
+                        className="editable-cell"
+                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'date', transaction.date)}
+                      >
+                        {isEditing && editingCell?.field === 'date' ? (
+                          <input
+                            type="date"
+                            value={editValue}
+                            onChange={handleEditChange}
+                            className="edit-input"
+                          />
+                        ) : (
+                          <span className={isPending ? 'pending-text' : ''}>
+                            {formatDate(transaction.date)}
+                            {isPending && <span className="pending-indicator"> ⏳</span>}
+                          </span>
+                        )}
+                      </td>
+                      <td 
+                        className="editable-cell description"
+                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'description', transaction.description || '')}
+                      >
+                        {isEditing && editingCell?.field === 'description' ? (
+                          <input
+                            type="text"
+                            value={editValue}
+                            onChange={handleEditChange}
+                            className="edit-input"
+                          />
+                        ) : (
+                          <span className={isPending ? 'pending-text' : ''}>
+                            {transaction.description || 'N/A'}
+                          </span>
+                        )}
+                      </td>
+                      <td 
+                        className={`amount credit ${transaction.credit > 0 ? 'positive' : ''} editable-cell`}
+                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'credit', transaction.credit || 0)}
+                      >
+                        {isEditing && editingCell?.field === 'credit' ? (
+                          <input
+                            type="number"
+                            value={editValue}
+                            onChange={handleEditChange}
+                            className="edit-input"
+                            min="0"
+                            step="0.01"
+                            placeholder="Enter amount"
+                          />
+                        ) : (
+                          <span className={isPending ? 'pending-text' : ''}>
+                            {transaction.credit > 0 ? formatAmount(transaction.credit) : '-'}
+                          </span>
+                        )}
+                      </td>
+                      <td 
+                        className={`amount debit ${transaction.debit > 0 ? 'negative' : ''} editable-cell`}
+                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'debit', transaction.debit || 0)}
+                      >
+                        {isEditing && editingCell?.field === 'debit' ? (
+                          <input
+                            type="number"
+                            value={editValue}
+                            onChange={handleEditChange}
+                            className="edit-input"
+                            min="0"
+                            step="0.01"
+                            placeholder="Enter amount"
+                          />
+                        ) : (
+                          <span className={isPending ? 'pending-text' : ''}>
+                            {transaction.debit > 0 ? formatAmount(transaction.debit) : '-'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="balance">
+                        <span className={isPending ? 'pending-text' : ''}>
+                          {formatAmount(transaction.previous_balance)}
+                        </span>
+                      </td>
+                      <td className="balance">
+                        <span className={isPending ? 'pending-text' : ''}>
+                          {formatAmount(transaction.remaining_balance)}
+                        </span>
+                      </td>
+                      <td 
+                        className="editable-cell notes"
+                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'notes', transaction.notes || '')}
+                      >
+                        {isEditing && editingCell?.field === 'notes' ? (
+                          <input
+                            type="text"
+                            value={editValue}
+                            onChange={handleEditChange}
+                            className="edit-input"
+                          />
+                        ) : (
+                          <span className={isPending ? 'pending-text' : ''}>
+                            {transaction.notes || '-'}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                    {isEditing && (
+                      <tr className="edit-actions-row">
+                        <td colSpan="8">
+                          <div className="edit-actions">
+                            <button onClick={handleSaveEdit} className="save-btn">Save</button>
+                            <button onClick={handleCancelEdit} className="cancel-btn">Cancel</button>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

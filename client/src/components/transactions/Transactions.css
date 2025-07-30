@@ -472,3 +472,132 @@
   margin-bottom: 0.5rem;
   text-align: center;
 } 
+
+.editable-cell {
+  cursor: pointer;
+  position: relative;
+}
+.editable-cell:hover {
+  background-color: #f0f8ff;
+}
+.edit-input {
+  width: 100%;
+  padding: 0.3rem;
+  border: 2px solid #3182ce;
+  border-radius: 4px;
+  font-size: inherit;
+  background: #fff;
+}
+.edit-actions-row {
+  background-color: #f8f9fa;
+}
+.edit-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem;
+}
+.save-btn {
+  background: #38a169;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.save-btn:hover {
+  background: #2f855a;
+}
+.cancel-btn {
+  background: #e53e3e;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cancel-btn:hover {
+  background: #c53030;
+} 
+
+/* Pending transaction styles */
+.pending-transaction {
+  opacity: 0.7;
+  background-color: #f8f9fa;
+  position: relative;
+}
+
+.pending-transaction::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(45deg, #007bff, #28a745);
+  animation: pending-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pending-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.pending-text {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.pending-indicator {
+  color: #007bff;
+  font-weight: bold;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+/* Disabled button styles */
+.transactions-modal-submit:disabled,
+.transactions-modal-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #6c757d;
+}
+
+.transactions-modal-submit:disabled:hover,
+.transactions-modal-cancel:disabled:hover {
+  background-color: #6c757d;
+  transform: none;
+}
+
+/* Loading state for modal */
+.transactions-modal-submit:disabled {
+  position: relative;
+}
+
+.transactions-modal-submit:disabled::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+} 
