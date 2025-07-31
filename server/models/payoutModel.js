@@ -8,3 +8,17 @@ export async function getAllPayouts() {
   if (error) throw error;
   return data;
 }
+
+export async function deletePayout(id) {
+  try {
+    const { error } = await supabase
+      .from('payouts')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    throw error;
+  }
+}
