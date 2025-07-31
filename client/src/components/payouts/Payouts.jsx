@@ -14,6 +14,15 @@ const Payouts = () => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [showFilter, setShowFilter] = useState(false);
+  const [editingCell, setEditingCell] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState({
+    date: '',
+    funds_released: ''
+  });
+  const [modalError, setModalError] = useState('');
+  const [isAddingPayout, setIsAddingPayout] = useState(false);
 
   const filterRef = useRef(null);
 
@@ -66,6 +75,136 @@ const Payouts = () => {
       style: 'currency',
       currency: 'INR'
     }).format(amount || 0);
+  };
+
+  const handleCellDoubleClick = (rowId, field, value) => {
+    setEditingCell({ rowId, field, value });
+    setEditValue(value);
+  };
+
+  const handleEditChange = (e) => {
+    setEditValue(e.target.value);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingCell) return;
+    
+    const originalPayouts = [...payouts];
+    
+    try {
+      const token = localStorage.getItem('token');
+      let updateData = { [editingCell.field]: editValue };
+      
+      if (editingCell.field === 'funds_released') {
+        updateData = { funds_released: Number(editValue) || 0 };
+      }
+      
+      setPayouts(prev => prev.map(payout => 
+        payout.id === editingCell.rowId 
+          ? { ...payout, ...updateData }
+          : payout
+      ));
+      
+      setEditingCell(null);
+      setEditValue('');
+      
+      const response = await fetch(`${API_ENDPOINTS.PAYOUTS}/${editingCell.rowId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update payout');
+      }
+      
+      setTimeout(() => {
+        fetchPayouts();
+      }, 100);
+      
+    } catch (err) {
+      console.error('Error updating payout:', err);
+      
+      setPayouts(originalPayouts);
+      
+      alert(`Failed to update payout: ${err.message}`);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const handleModalChange = (e) => {
+    const { name, value } = e.target;
+    setModalData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddPayout = async (e) => {
+    e.preventDefault();
+    setModalError('');
+    if (!modalData.date || !modalData.funds_released) {
+      setModalError('Date and funds released are required.');
+      return;
+    }
+    
+    const originalPayouts = [...payouts];
+    
+    try {
+      setIsAddingPayout(true);
+      const token = localStorage.getItem('token');
+      const newPayoutData = {
+        date: modalData.date,
+        funds_released: Number(modalData.funds_released)
+      };
+      
+             const tempPayout = {
+         id: `temp-${Date.now()}`,
+         date: newPayoutData.date,
+         funds_released: newPayoutData.funds_released,
+         isPending: true
+       };
+      
+      setPayouts(prev => [...prev, tempPayout]);
+      
+      setShowModal(false);
+      setModalData({ date: '', funds_released: '' });
+      
+      const res = await fetch(API_ENDPOINTS.PAYOUTS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newPayoutData)
+      });
+      
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to add payout');
+      }
+      
+      setPayouts(prev => prev.filter(payout => payout.id !== tempPayout.id));
+      
+      setTimeout(() => {
+        fetchPayouts();
+      }, 100);
+      
+    } catch (err) {
+      console.error('Error adding payout:', err);
+      
+      setPayouts(originalPayouts);
+      
+      setShowModal(true);
+      setModalError(err.message);
+    } finally {
+      setIsAddingPayout(false);
+    }
   };
 
   // Filter and sort payouts
@@ -277,10 +416,16 @@ const Payouts = () => {
 
   return (
     <div className="payouts-container">
-      <div className="payouts-header">
-        <h2>All Payouts</h2>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <div className="payouts-filter-dropdown-wrapper" ref={filterRef}>
+             <div className="payouts-header">
+         <h2>All Payouts</h2>
+         <div style={{ display: 'flex', alignItems: 'center' }}>
+           <button
+             className="payouts-new-btn"
+             onClick={() => setShowModal(true)}
+           >
+             New
+           </button>
+           <div className="payouts-filter-dropdown-wrapper" ref={filterRef}>
             <button
               className="payouts-filter-btn"
               onClick={() => setShowFilter((prev) => !prev)}
@@ -350,10 +495,60 @@ const Payouts = () => {
               Delete Selected ({selectedPayouts.length})
             </button>
           )}
-        </div>
-      </div>
+                 </div>
+       </div>
 
-      {showBulkDeleteModal && (
+       {showModal && (
+         <div className="payouts-modal-backdrop">
+           <div className="payouts-modal">
+             <h3>Add New Payout</h3>
+             <form onSubmit={handleAddPayout} className="payouts-modal-form">
+               <label>
+                 Date:
+                 <input 
+                   type="date" 
+                   name="date" 
+                   value={modalData.date} 
+                   onChange={handleModalChange} 
+                   required 
+                 />
+               </label>
+               <label>
+                 Funds Released:
+                 <input 
+                   type="number" 
+                   name="funds_released" 
+                   value={modalData.funds_released} 
+                   onChange={handleModalChange} 
+                   min="0.01" 
+                   step="0.01" 
+                   required 
+                 />
+               </label>
+               {modalError && <div className="payouts-modal-error">{modalError}</div>}
+               <div className="payouts-modal-actions">
+                 <button 
+                   type="submit" 
+                   className="payouts-modal-submit"
+                   disabled={isAddingPayout}
+                 >
+                   {isAddingPayout ? 'Adding...' : 'Add'}
+                 </button>
+                 <button 
+                   type="button" 
+                   className="payouts-modal-cancel" 
+                   onClick={() => setShowModal(false)}
+                   disabled={isAddingPayout}
+                 >
+                   Cancel
+                 </button>
+               </div>
+             </form>
+           </div>
+         </div>
+       )}
+
+       {showBulkDeleteModal && (
         <div className="payouts-modal-backdrop">
           <div className="payouts-modal delete-modal">
             <h3>Delete Multiple Payouts</h3>
@@ -405,9 +600,9 @@ const Payouts = () => {
       ) : (
         <>
           <div className="payouts-table-container">
-            <table className="payouts-table">
-              <thead>
-                <tr>
+        <table className="payouts-table">
+          <thead>
+            <tr>
                   <th>
                     <input 
                       type="checkbox" 
@@ -421,27 +616,81 @@ const Payouts = () => {
                     />
                   </th>
                   <th>S.No.</th>
-                  <th>Date</th>
-                  <th>Funds Released</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentPayouts.map((payout, index) => (
-                  <tr key={payout.id} className="payout-row">
-                    <td className="checkbox-cell">
-                      <input 
-                        type="checkbox" 
-                        checked={selectedPayouts.includes(payout.id)}
-                        onChange={() => handleSelectPayout(payout.id)}
-                      />
-                    </td>
-                    <td className="serial-number">{indexOfFirstPayout + index + 1}</td>
-                    <td className="payout-date">{formatDate(payout.date)}</td>
-                    <td className="funds-released">{formatAmount(payout.funds_released)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+              <th>Date</th>
+              <th>Funds Released</th>
+            </tr>
+          </thead>
+          <tbody>
+                                 {currentPayouts.map((payout, index) => {
+                   const isEditing = editingCell?.rowId === payout.id;
+                   const isPending = payout.isPending;
+                   
+                   return (
+                     <React.Fragment key={payout.id}>
+                       <tr className={`payout-row ${isPending ? 'pending-payout' : ''}`}>
+                         <td className="checkbox-cell">
+                           <input 
+                             type="checkbox" 
+                             checked={selectedPayouts.includes(payout.id)}
+                             onChange={() => handleSelectPayout(payout.id)}
+                           />
+                         </td>
+                                                    <td className="serial-number">{indexOfFirstPayout + index + 1}</td>
+                           <td 
+                             className="payout-date editable-cell"
+                             onDoubleClick={() => !isPending && handleCellDoubleClick(payout.id, 'date', payout.date)}
+                           >
+                             {isEditing && editingCell?.field === 'date' ? (
+                               <input
+                                 type="date"
+                                 value={editValue}
+                                 onChange={handleEditChange}
+                                 className="edit-input"
+                               />
+                             ) : (
+                               <span className={isPending ? 'pending-text' : ''}>
+                                 {formatDate(payout.date)}
+                                 {isPending && <span className="pending-indicator"> ⏳</span>}
+                               </span>
+                             )}
+                           </td>
+                           <td 
+                             className="funds-released editable-cell"
+                             onDoubleClick={() => !isPending && handleCellDoubleClick(payout.id, 'funds_released', payout.funds_released)}
+                           >
+                             {isEditing && editingCell?.field === 'funds_released' ? (
+                               <input
+                                 type="number"
+                                 value={editValue}
+                                 onChange={handleEditChange}
+                                 className="edit-input"
+                                 min="0"
+                                 step="0.01"
+                                 placeholder="Enter amount"
+                               />
+                             ) : (
+                               <span className={isPending ? 'pending-text' : ''}>
+                                 {formatAmount(payout.funds_released)}
+                                 {isPending && <span className="pending-indicator"> ⏳</span>}
+                               </span>
+                             )}
+                           </td>
+                       </tr>
+                       {isEditing && (
+                         <tr className="edit-actions-row">
+                           <td colSpan="4">
+                             <div className="edit-actions">
+                               <button onClick={handleSaveEdit} className="save-btn">Save</button>
+                               <button onClick={handleCancelEdit} className="cancel-btn">Cancel</button>
+                             </div>
+                           </td>
+              </tr>
+                       )}
+                     </React.Fragment>
+                   );
+                 })}
+          </tbody>
+        </table>
           </div>
 
           {/* Pagination Controls */}

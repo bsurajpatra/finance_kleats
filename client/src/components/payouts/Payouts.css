@@ -314,11 +314,47 @@
   text-align: center;
 }
 
+.payouts-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.payouts-modal-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: 500;
+  color: #444;
+  gap: 0.3rem;
+}
+
+.payouts-modal-form input {
+  padding: 0.5rem 0.7rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+}
+
 .payouts-modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
   margin-top: 0.5rem;
+}
+
+.payouts-modal-submit {
+  background: #38a169;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.payouts-modal-submit:hover {
+  background: #2f855a;
 }
 
 .payouts-modal-cancel {
@@ -334,6 +370,29 @@
 
 .payouts-modal-cancel:hover {
   background: #cbd5e1;
+}
+
+.payouts-modal-error {
+  color: #e53e3e;
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.payouts-modal-submit:disabled,
+.payouts-modal-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #6c757d;
+}
+
+.payouts-modal-submit:disabled:hover,
+.payouts-modal-cancel:disabled:hover {
+  background-color: #6c757d;
+  transform: none;
 }
 
 /* Pagination Styles */
@@ -531,4 +590,120 @@
 
 .payouts-export-btn:hover {
   background: #2f855a;
+}
+
+/* Editable Cell Styles */
+.editable-cell {
+  cursor: pointer;
+  position: relative;
+}
+
+.editable-cell:hover {
+  background-color: #f0f8ff;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 0.3rem;
+  border: 2px solid #3182ce;
+  border-radius: 4px;
+  font-size: inherit;
+  background: #fff;
+}
+
+.edit-actions-row {
+  background-color: #f8f9fa;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem;
+}
+
+.save-btn {
+  background: #38a169;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.save-btn:hover {
+  background: #2f855a;
+}
+
+.cancel-btn {
+  background: #e53e3e;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #c53030;
+}
+
+/* New Button Styles */
+.payouts-new-btn {
+  background: #3182ce;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-right: 1rem;
+  transition: background 0.2s;
+}
+
+.payouts-new-btn:hover {
+  background: #225ea8;
+}
+
+/* Pending Transaction Styles */
+.pending-payout {
+  opacity: 0.7;
+  background-color: #f8f9fa;
+  position: relative;
+}
+
+.pending-payout::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(45deg, #007bff, #28a745);
+  animation: pending-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pending-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.pending-text {
+  color: #6c757d;
+  font-style: italic;
+}
+
+.pending-indicator {
+  color: #007bff;
+  font-weight: bold;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
 }
