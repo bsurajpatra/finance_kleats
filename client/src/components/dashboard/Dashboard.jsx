@@ -4,6 +4,7 @@ import logo from '../../assets/logo.png';
 import Transactions from '../transactions/Transactions';
 import Balance from '../balance/Balance';
 import Payouts from '../payouts/Payouts';
+import CanteenManagement from '../canteen/CanteenManagement';
 
 const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
   return (
@@ -39,6 +40,12 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
         >
           Payouts
         </button>
+        <button 
+          className={`nav-tab ${activeTab === 'canteen' ? 'active' : ''}`}
+          onClick={() => onTabChange('canteen')}
+        >
+          Canteen
+        </button>
       </nav>
 
       <main className="dashboard-main">
@@ -52,6 +59,10 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
 
         {activeTab === 'payouts' && (
           <Payouts />
+        )}
+
+        {activeTab === 'canteen' && (
+          <CanteenManagement />
         )}
       </main>
       

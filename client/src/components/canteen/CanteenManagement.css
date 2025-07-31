@@ -1,0 +1,41 @@
+/* Canteen Management Container */
+.canteen-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(44, 44, 44, 0.06);
+  border: 1px solid #f5f5f5;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.canteen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 100;
+}
+
+.canteen-header h2 {
+  color: #222;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.canteen-placeholder {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #666;
+  font-size: 1.1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
+}
+
+.canteen-placeholder p {
+  margin: 0;
+  font-weight: 500;
+} 
