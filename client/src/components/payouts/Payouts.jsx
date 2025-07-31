@@ -419,6 +419,15 @@ const Payouts = () => {
              <div className="payouts-header">
          <h2>All Payouts</h2>
          <div style={{ display: 'flex', alignItems: 'center' }}>
+           {selectedPayouts.length > 0 && (
+             <button
+               className="bulk-delete-btn"
+               onClick={handleBulkDeleteClick}
+               style={{ marginRight: '1rem' }}
+             >
+               Delete Selected ({selectedPayouts.length})
+             </button>
+           )}
            <button
              className="payouts-new-btn"
              onClick={() => setShowModal(true)}
@@ -479,22 +488,13 @@ const Payouts = () => {
               </div>
             )}
           </div>
-          <button
-            className="payouts-export-btn"
-            onClick={exportToCSV}
-            style={{ marginLeft: '1rem' }}
-          >
-            Export CSV
-          </button>
-                    {selectedPayouts.length > 0 && (
-            <button
-              className="bulk-delete-btn"
-              onClick={handleBulkDeleteClick}
-              style={{ marginLeft: '1rem' }}
-            >
-              Delete Selected ({selectedPayouts.length})
-            </button>
-          )}
+                     <button
+             className="payouts-export-btn"
+             onClick={exportToCSV}
+             style={{ marginLeft: '1rem' }}
+           >
+             Export CSV
+           </button>
                  </div>
        </div>
 

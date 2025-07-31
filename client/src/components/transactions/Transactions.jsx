@@ -28,12 +28,19 @@ const Transactions = () => {
   const [transactionToDelete, setTransactionToDelete] = useState(null);
   const [selectedTransactions, setSelectedTransactions] = useState([]);
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [transactionsPerPage] = useState(20);
 
   const filterRef = useRef(null);
 
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortOrder, startDate, endDate, typeFilter]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -278,6 +285,68 @@ const Transactions = () => {
     setShowBulkDeleteModal(false);
   };
 
+  // Pagination handlers
+  const goToPage = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    setSelectedTransactions([]); // Clear selections when changing pages
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+  };
+
+  const goToFirstPage = () => {
+    goToPage(1);
+  };
+
+  const goToLastPage = () => {
+    goToPage(totalPages);
+  };
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pageNumbers.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pageNumbers.push(i);
+        }
+      } else {
+        pageNumbers.push(1);
+        pageNumbers.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pageNumbers.push(i);
+        }
+        pageNumbers.push('...');
+        pageNumbers.push(totalPages);
+      }
+    }
+    
+    return pageNumbers;
+  };
+
   const filteredTransactions = transactions
     .filter(tx => {
       const txDate = new Date(tx.date);
@@ -293,6 +362,12 @@ const Transactions = () => {
       const dateB = new Date(b.date);
       return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
+
+  // Pagination logic
+  const indexOfLastTransaction = currentPage * transactionsPerPage;
+  const indexOfFirstTransaction = indexOfLastTransaction - transactionsPerPage;
+  const currentTransactions = filteredTransactions.slice(indexOfFirstTransaction, indexOfLastTransaction);
+  const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
 
   const exportToCSV = () => {
     if (filteredTransactions.length === 0) return;
@@ -433,21 +508,21 @@ const Transactions = () => {
       <div className="transactions-header">
         <h2>All Transactions</h2>
         <div style={{ display: 'flex', alignItems: 'center' }}>
+          {selectedTransactions.length > 0 && (
+            <button
+              className="bulk-delete-btn"
+              onClick={handleBulkDeleteClick}
+              style={{ marginRight: '1rem' }}
+            >
+              Delete Selected ({selectedTransactions.length})
+            </button>
+          )}
           <button
             className="transactions-new-btn"
             onClick={() => setShowModal(true)}
           >
             New
           </button>
-          {selectedTransactions.length > 0 && (
-            <button
-              className="bulk-delete-btn"
-              onClick={handleBulkDeleteClick}
-              style={{ marginLeft: '1rem' }}
-            >
-              Delete Selected ({selectedTransactions.length})
-            </button>
-          )}
           <div className="transactions-filter-dropdown-wrapper" ref={filterRef}>
             <button
               className="transactions-filter-btn"
@@ -687,10 +762,10 @@ const Transactions = () => {
                   <input 
                     type="checkbox" 
                     onChange={handleSelectAll}
-                    checked={selectedTransactions.length === filteredTransactions.length && filteredTransactions.length > 0}
+                    checked={selectedTransactions.length === currentTransactions.length && currentTransactions.length > 0}
                     ref={input => {
                       if (input) {
-                        input.indeterminate = selectedTransactions.length > 0 && selectedTransactions.length < filteredTransactions.length;
+                        input.indeterminate = selectedTransactions.length > 0 && selectedTransactions.length < currentTransactions.length;
                       }
                     }}
                   />
@@ -706,7 +781,7 @@ const Transactions = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredTransactions.map((transaction, index) => {
+              {currentTransactions.map((transaction, index) => {
                 const transactionType = getTransactionType(transaction.credit, transaction.debit);
                 const isEditing = editingCell?.rowId === transaction.id;
                 const isPending = transaction.isPending;
@@ -722,7 +797,7 @@ const Transactions = () => {
                           disabled={isPending}
                         />
                       </td>
-                      <td className="serial-number">{index + 1}</td>
+                      <td className="serial-number">{indexOfFirstTransaction + index + 1}</td>
                       <td 
                         className="editable-cell"
                         onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'date', transaction.date)}
@@ -841,6 +916,59 @@ const Transactions = () => {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            <span>
+              Showing {indexOfFirstTransaction + 1} to {Math.min(indexOfLastTransaction, filteredTransactions.length)} of {filteredTransactions.length} transactions
+            </span>
+          </div>
+          <div className="pagination-controls">
+            <button 
+              className="pagination-btn"
+              onClick={goToFirstPage}
+              disabled={currentPage === 1}
+            >
+              « First
+            </button>
+            <button 
+              className="pagination-btn"
+              onClick={goToPreviousPage}
+              disabled={currentPage === 1}
+            >
+              ‹ Previous
+            </button>
+            
+            {getPageNumbers().map((pageNumber, index) => (
+              <button
+                key={index}
+                className={`pagination-btn ${pageNumber === currentPage ? 'active' : ''} ${pageNumber === '...' ? 'disabled' : ''}`}
+                onClick={() => typeof pageNumber === 'number' && goToPage(pageNumber)}
+                disabled={pageNumber === '...'}
+              >
+                {pageNumber}
+              </button>
+            ))}
+            
+            <button 
+              className="pagination-btn"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+            >
+              Next ›
+            </button>
+            <button 
+              className="pagination-btn"
+              onClick={goToLastPage}
+              disabled={currentPage === totalPages}
+            >
+              Last »
+            </button>
+          </div>
         </div>
       )}
 
