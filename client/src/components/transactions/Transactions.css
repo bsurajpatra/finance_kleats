@@ -588,3 +588,136 @@
   0% { transform: translateY(-50%) rotate(0deg); }
   100% { transform: translateY(-50%) rotate(360deg); }
 } 
+
+/* Delete Modal Styles */
+.delete-modal {
+  max-width: 500px;
+}
+
+.delete-confirmation {
+  margin: 20px 0;
+}
+
+.transaction-preview {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 15px;
+  margin: 15px 0;
+}
+
+.transaction-preview p {
+  margin: 5px 0;
+  color: #495057;
+}
+
+.warning-text {
+  color: #dc3545;
+  font-weight: 500;
+  margin-top: 15px;
+  padding: 10px;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 4px;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.delete-btn:hover {
+  background-color: #c82333;
+} 
+
+/* Bulk Delete Styles */
+.checkbox-cell {
+  text-align: center;
+  padding: 8px;
+  width: 40px;
+}
+
+.checkbox-cell input[type="checkbox"] {
+  cursor: pointer;
+  transform: scale(1.2);
+}
+
+.checkbox-cell input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.bulk-delete-btn {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.bulk-delete-btn:hover {
+  background-color: #c82333;
+}
+
+.selected-transactions-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 10px;
+  background-color: #f8f9fa;
+}
+
+.selected-transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid #e9ecef;
+  font-size: 14px;
+}
+
+.selected-transaction-item:last-child {
+  border-bottom: none;
+}
+
+.selected-transaction-item span {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.selected-transaction-item span:last-child {
+  margin-right: 0;
+  text-align: right;
+  font-weight: 500;
+}
+
+.more-transactions {
+  text-align: center;
+  font-style: italic;
+  color: #6c757d;
+  padding: 5px 0;
+  border-top: 1px solid #e9ecef;
+  margin-top: 5px;
+}
+
+/* Table header checkbox styling */
+.transactions-table th:first-child {
+  width: 40px;
+  text-align: center;
+}
+
+.transactions-table th:first-child input[type="checkbox"] {
+  cursor: pointer;
+  transform: scale(1.2);
+} 

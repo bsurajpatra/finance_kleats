@@ -24,6 +24,10 @@ const Transactions = () => {
   
   const [editingCell, setEditingCell] = useState(null); 
   const [editValue, setEditValue] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const [selectedTransactions, setSelectedTransactions] = useState([]);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
 
   const filterRef = useRef(null);
 
@@ -154,6 +158,124 @@ const Transactions = () => {
   const handleCancelEdit = () => {
     setEditingCell(null);
     setEditValue('');
+  };
+
+  const handleDeleteClick = (transaction) => {
+    setTransactionToDelete(transaction);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!transactionToDelete) return;
+    
+    const originalTransactions = [...transactions];
+    
+    try {
+      // Optimistic update - remove from UI immediately
+      setTransactions(prev => prev.filter(tx => tx.id !== transactionToDelete.id));
+      setShowDeleteModal(false);
+      setTransactionToDelete(null);
+      
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_ENDPOINTS.TRANSACTIONS}/${transactionToDelete.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete transaction');
+      }
+      
+      // Refresh data to ensure balances are recalculated
+      setTimeout(() => {
+        fetchTransactions();
+      }, 100);
+      
+    } catch (err) {
+      console.error('Error deleting transaction:', err);
+      
+      // Revert optimistic update on error
+      setTransactions(originalTransactions);
+      alert(`Failed to delete transaction: ${err.message}`);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setTransactionToDelete(null);
+  };
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedTransactions(filteredTransactions.map(tx => tx.id));
+    } else {
+      setSelectedTransactions([]);
+    }
+  };
+
+  const handleSelectTransaction = (transactionId) => {
+    setSelectedTransactions(prev => {
+      if (prev.includes(transactionId)) {
+        return prev.filter(id => id !== transactionId);
+      } else {
+        return [...prev, transactionId];
+      }
+    });
+  };
+
+  const handleBulkDeleteClick = () => {
+    if (selectedTransactions.length === 0) return;
+    setShowBulkDeleteModal(true);
+  };
+
+  const handleConfirmBulkDelete = async () => {
+    if (selectedTransactions.length === 0) return;
+    
+    const originalTransactions = [...transactions];
+    const transactionsToDelete = transactions.filter(tx => selectedTransactions.includes(tx.id));
+    
+    try {
+      // Optimistic update - remove from UI immediately
+      setTransactions(prev => prev.filter(tx => !selectedTransactions.includes(tx.id)));
+      setShowBulkDeleteModal(false);
+      setSelectedTransactions([]);
+      
+      const token = localStorage.getItem('token');
+      
+      // Delete transactions one by one (could be optimized with a bulk endpoint)
+      for (const transactionId of selectedTransactions) {
+        const response = await fetch(`${API_ENDPOINTS.TRANSACTIONS}/${transactionId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(`Failed to delete transaction ${transactionId}: ${errorData.error || 'Unknown error'}`);
+        }
+      }
+      
+      // Refresh data to ensure balances are recalculated
+      setTimeout(() => {
+        fetchTransactions();
+      }, 100);
+      
+    } catch (err) {
+      console.error('Error bulk deleting transactions:', err);
+      
+      // Revert optimistic update on error
+      setTransactions(originalTransactions);
+      alert(`Failed to delete transactions: ${err.message}`);
+    }
+  };
+
+  const handleCancelBulkDelete = () => {
+    setShowBulkDeleteModal(false);
   };
 
   const filteredTransactions = transactions
@@ -317,6 +439,15 @@ const Transactions = () => {
           >
             New
           </button>
+          {selectedTransactions.length > 0 && (
+            <button
+              className="bulk-delete-btn"
+              onClick={handleBulkDeleteClick}
+              style={{ marginLeft: '1rem' }}
+            >
+              Delete Selected ({selectedTransactions.length})
+            </button>
+          )}
           <div className="transactions-filter-dropdown-wrapper" ref={filterRef}>
             <button
               className="transactions-filter-btn"
@@ -452,6 +583,84 @@ const Transactions = () => {
         </div>
       )}
 
+      {showDeleteModal && (
+        <div className="transactions-modal-backdrop">
+          <div className="transactions-modal delete-modal">
+            <h3>Delete Transaction</h3>
+            <div className="delete-confirmation">
+              <p>Are you sure you want to delete this transaction?</p>
+              <div className="transaction-preview">
+                <p><strong>Date:</strong> {transactionToDelete && formatDate(transactionToDelete.date)}</p>
+                <p><strong>Description:</strong> {transactionToDelete?.description || 'N/A'}</p>
+                <p><strong>Amount:</strong> {transactionToDelete && formatAmount(transactionToDelete.credit > 0 ? transactionToDelete.credit : transactionToDelete.debit)}</p>
+                <p><strong>Type:</strong> {transactionToDelete && (transactionToDelete.credit > 0 ? 'Credit' : 'Debit')}</p>
+              </div>
+              <p className="warning-text">⚠️ This action cannot be undone and will recalculate all subsequent balances.</p>
+            </div>
+            <div className="transactions-modal-actions">
+              <button 
+                onClick={handleConfirmDelete} 
+                className="delete-btn"
+              >
+                Delete
+              </button>
+              <button 
+                onClick={handleCancelDelete} 
+                className="transactions-modal-cancel"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkDeleteModal && (
+        <div className="transactions-modal-backdrop">
+          <div className="transactions-modal delete-modal">
+            <h3>Delete Multiple Transactions</h3>
+            <div className="delete-confirmation">
+              <p>Are you sure you want to delete {selectedTransactions.length} selected transaction(s)?</p>
+              <div className="transaction-preview">
+                <p><strong>Selected Transactions:</strong></p>
+                <div className="selected-transactions-list">
+                  {transactions
+                    .filter(tx => selectedTransactions.includes(tx.id))
+                    .slice(0, 5) // Show first 5 for preview
+                    .map(tx => (
+                      <div key={tx.id} className="selected-transaction-item">
+                        <span>{formatDate(tx.date)}</span>
+                        <span>{tx.description || 'N/A'}</span>
+                        <span>{formatAmount(tx.credit > 0 ? tx.credit : tx.debit)}</span>
+                      </div>
+                    ))}
+                  {selectedTransactions.length > 5 && (
+                    <div className="more-transactions">
+                      ... and {selectedTransactions.length - 5} more
+                    </div>
+                  )}
+                </div>
+              </div>
+              <p className="warning-text">⚠️ This action cannot be undone and will recalculate all subsequent balances.</p>
+            </div>
+            <div className="transactions-modal-actions">
+              <button 
+                onClick={handleConfirmBulkDelete} 
+                className="delete-btn"
+              >
+                Delete All
+              </button>
+              <button 
+                onClick={handleCancelBulkDelete} 
+                className="transactions-modal-cancel"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {filteredTransactions.length === 0 ? (
         <div className="no-transactions">
           <p>No transactions found.</p>
@@ -461,6 +670,18 @@ const Transactions = () => {
           <table className="transactions-table">
             <thead>
               <tr>
+                <th>
+                  <input 
+                    type="checkbox" 
+                    onChange={handleSelectAll}
+                    checked={selectedTransactions.length === filteredTransactions.length && filteredTransactions.length > 0}
+                    ref={input => {
+                      if (input) {
+                        input.indeterminate = selectedTransactions.length > 0 && selectedTransactions.length < filteredTransactions.length;
+                      }
+                    }}
+                  />
+                </th>
                 <th>S.No.</th>
                 <th>Date</th>
                 <th>Description</th>
@@ -480,6 +701,14 @@ const Transactions = () => {
                 return (
                   <React.Fragment key={transaction.id}>
                     <tr className={`transaction-row ${transactionType} ${isPending ? 'pending-transaction' : ''}`}>
+                      <td className="checkbox-cell">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedTransactions.includes(transaction.id)}
+                          onChange={() => handleSelectTransaction(transaction.id)}
+                          disabled={isPending}
+                        />
+                      </td>
                       <td className="serial-number">{index + 1}</td>
                       <td 
                         className="editable-cell"
@@ -586,7 +815,7 @@ const Transactions = () => {
                     </tr>
                     {isEditing && (
                       <tr className="edit-actions-row">
-                        <td colSpan="8">
+                        <td colSpan="9">
                           <div className="edit-actions">
                             <button onClick={handleSaveEdit} className="save-btn">Save</button>
                             <button onClick={handleCancelEdit} className="cancel-btn">Cancel</button>

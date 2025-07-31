@@ -190,3 +190,87 @@ async function recalculateBalancesAsync(id, updates) {
     throw error;
   }
 } 
+
+export async function deleteTransaction(id) {
+  try {
+    // Get the transaction to be deleted
+    const { data: transactionToDelete, error: fetchError } = await supabase
+      .from('finance_transactions')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (fetchError) throw fetchError;
+    if (!transactionToDelete) throw new Error('Transaction not found');
+    
+    // Get the previous transaction's remaining balance
+    const { data: previousTx, error: prevError } = await supabase
+      .from('finance_transactions')
+      .select('remaining_balance')
+      .lt('date', transactionToDelete.date)
+      .order('date', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    if (prevError) throw prevError;
+    
+    const previousBalance = previousTx?.remaining_balance || 0;
+    
+    // Delete the transaction
+    const { error: deleteError } = await supabase
+      .from('finance_transactions')
+      .delete()
+      .eq('id', id);
+    
+    if (deleteError) throw deleteError;
+    
+    // Recalculate balances for all subsequent transactions
+    await recalculateBalancesAfterDeletionAsync(transactionToDelete.date, previousBalance);
+    
+    return { success: true };
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function recalculateBalancesAfterDeletionAsync(deletedDate, startingBalance) {
+  try {
+    const { data: subsequentTxs, error } = await supabase
+      .from('finance_transactions')
+      .select('*')
+      .gte('date', deletedDate)
+      .order('date', { ascending: true });
+    
+    if (error) throw error;
+    
+    if (subsequentTxs.length === 0) return;
+    
+    const batchSize = 10;
+    let runningBalance = startingBalance;
+    
+    for (let i = 0; i < subsequentTxs.length; i += batchSize) {
+      const batch = subsequentTxs.slice(i, i + batchSize);
+      
+      for (const tx of batch) {
+        const newRemainingBalance = runningBalance + tx.credit - tx.debit;
+        
+        await supabase
+          .from('finance_transactions')
+          .update({
+            previous_balance: runningBalance,
+            remaining_balance: newRemainingBalance
+          })
+          .eq('id', tx.id);
+        
+        runningBalance = newRemainingBalance;
+      }
+      
+      if (i + batchSize < subsequentTxs.length) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+      }
+    }
+  } catch (error) {
+    console.error('Error recalculating balances after deletion:', error);
+    throw error;
+  }
+} 

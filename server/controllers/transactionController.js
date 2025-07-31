@@ -1,4 +1,4 @@
-import { getAllTransactions, createTransaction, updateTransaction } from '../models/transactionModel.js'
+import { getAllTransactions, createTransaction, updateTransaction, deleteTransaction } from '../models/transactionModel.js'
 
 export async function fetchTransactions(req, res) {
   try {
@@ -46,5 +46,21 @@ export async function updateTransactionController(req, res) {
   } catch (err) {
     console.error('Error updating transaction:', err);
     res.status(500).json({ error: 'Failed to update transaction', details: err.message });
+  }
+} 
+
+export async function deleteTransactionController(req, res) {
+  try {
+    const { id } = req.params;
+    
+    console.log('Deleting transaction:', id);
+    
+    await deleteTransaction(id);
+    console.log('Transaction deleted successfully');
+    
+    res.json({ success: true, message: 'Transaction deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting transaction:', err);
+    res.status(500).json({ error: 'Failed to delete transaction', details: err.message });
   }
 } 
