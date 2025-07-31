@@ -1,6 +1,18 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { API_ENDPOINTS, authFetch } from '../../config/api.js';
 import './Payouts.css';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const Payouts = () => {
   const [payouts, setPayouts] = useState([]);
@@ -390,6 +402,139 @@ const Payouts = () => {
     URL.revokeObjectURL(url);
   };
 
+  // --- Bar Graph Data Preparation ---
+  function getMonthYear(dateString) {
+    const date = new Date(dateString);
+    return `${date.toLocaleString('default', { month: 'short' })} ${date.getFullYear()}`;
+  }
+
+  // Aggregate payouts by month
+  const payoutsByMonth = payouts.reduce((acc, payout) => {
+    if (!payout.date) return acc;
+    const monthYear = getMonthYear(payout.date);
+    acc[monthYear] = (acc[monthYear] || 0) + Number(payout.funds_released || 0);
+    return acc;
+  }, {});
+
+  // Sort months chronologically
+  const sortedMonths = Object.keys(payoutsByMonth).sort((a, b) => {
+    const [aMonth, aYear] = a.split(' ');
+    const [bMonth, bYear] = b.split(' ');
+    const aDate = new Date(`${aMonth} 1, ${aYear}`);
+    const bDate = new Date(`${bMonth} 1, ${bYear}`);
+    return aDate - bDate;
+  });
+
+  const barData = {
+    labels: sortedMonths,
+    datasets: [
+      {
+        label: 'Payout Amount (INR)',
+        data: sortedMonths.map(month => payoutsByMonth[month]),
+        backgroundColor: 'rgba(49, 130, 206, 0.7)',
+        borderColor: 'rgba(49, 130, 206, 1)',
+        borderWidth: 1,
+        borderRadius: 6,
+        maxBarThickness: 40
+      }
+    ]
+  };
+
+  const barOptions = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      title: {
+        display: true,
+        text: 'Payouts by Month',
+        font: { size: 18 }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `₹${context.parsed.y.toLocaleString('en-IN')}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return `₹${value.toLocaleString('en-IN')}`;
+          }
+        }
+      }
+    }
+  };
+
+  // --- Payouts by Day Graph ---
+  // Aggregate payouts by day (YYYY-MM-DD)
+  const payoutsByDay = payouts.reduce((acc, payout) => {
+    if (!payout.date) return acc;
+    const day = new Date(payout.date).toISOString().slice(0, 10); // 'YYYY-MM-DD'
+    acc[day] = (acc[day] || 0) + Number(payout.funds_released || 0);
+    return acc;
+  }, {});
+
+  // Get last 30 days (sorted)
+  const sortedDays = Object.keys(payoutsByDay)
+    .sort((a, b) => new Date(a) - new Date(b))
+    .slice(-30);
+
+  const barDataDay = {
+    labels: sortedDays,
+    datasets: [
+      {
+        label: 'Payout Amount (INR)',
+        data: sortedDays.map(day => payoutsByDay[day]),
+        backgroundColor: 'rgba(72, 187, 120, 0.7)',
+        borderColor: 'rgba(72, 187, 120, 1)',
+        borderWidth: 1,
+        borderRadius: 6,
+        maxBarThickness: 24
+      }
+    ]
+  };
+
+  const barOptionsDay = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      title: {
+        display: true,
+        text: 'Payouts by Day (Last 30 Days)',
+        font: { size: 16 }
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `₹${context.parsed.y.toLocaleString('en-IN')}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        ticks: {
+          callback: function(value, index, ticks) {
+            // Show only every 2nd or 3rd label for readability
+            return (index % 2 === 0) ? this.getLabelForValue(value) : '';
+          }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return `₹${value.toLocaleString('en-IN')}`;
+          }
+        }
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="payouts-container">
@@ -416,341 +561,352 @@ const Payouts = () => {
 
   return (
     <div className="payouts-container">
-             <div className="payouts-header">
-         <h2>All Payouts</h2>
-         <div style={{ display: 'flex', alignItems: 'center' }}>
-           {selectedPayouts.length > 0 && (
-             <button
-               className="bulk-delete-btn"
-               onClick={handleBulkDeleteClick}
-               style={{ marginRight: '1rem' }}
-             >
-               Delete Selected ({selectedPayouts.length})
-             </button>
-           )}
-           <button
-             className="payouts-new-btn"
-             onClick={() => setShowModal(true)}
-           >
-             New
-           </button>
-           <div className="payouts-filter-dropdown-wrapper" ref={filterRef}>
-            <button
-              className="payouts-filter-btn"
-              onClick={() => setShowFilter((prev) => !prev)}
-            >
-              Filter &#x25BC;
-            </button>
-            {showFilter && (
-              <div className="payouts-filter-dropdown">
-                <div className="filter-section">
-                  <label>
-                    Sort by:
-                    <select
-                      value={sortOrder}
-                      onChange={e => setSortOrder(e.target.value)}
-                      style={{ marginLeft: '0.5rem', marginRight: '1rem' }}
-                    >
-                      <option value="desc">Descending date</option>
-                      <option value="asc">Ascending date</option>
-                    </select>
-                  </label>
-                </div>
-                <div className="filter-section">
-                  <label>
-                    Period:
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={e => setStartDate(e.target.value)}
-                      style={{ marginLeft: '0.5rem' }}
-                    />
-                    <span style={{ margin: '0 0.5rem' }}>to</span>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={e => setEndDate(e.target.value)}
-                    />
-                  </label>
-                </div>
-                <div className="filter-section">
+      <div className="payouts-main-content">
+        <div className="payouts-table-side">
+          <div className="payouts-table-header">
+            <div className="payouts-header">
+              <h2>Payouts</h2>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {selectedPayouts.length > 0 && (
                   <button
-                    className="clear-filters-btn"
-                    onClick={() => {
-                      setStartDate('');
-                      setEndDate('');
-                      setSortOrder('desc');
-                    }}
+                    className="bulk-delete-btn"
+                    onClick={handleBulkDeleteClick}
+                    style={{ marginRight: '1rem' }}
                   >
-                    Clear Filters
+                    Delete Selected ({selectedPayouts.length})
                   </button>
-                </div>
-              </div>
-            )}
-          </div>
-                     <button
-             className="payouts-export-btn"
-             onClick={exportToCSV}
-             style={{ marginLeft: '1rem' }}
-           >
-             Export CSV
-           </button>
-                 </div>
-       </div>
-
-       {showModal && (
-         <div className="payouts-modal-backdrop">
-           <div className="payouts-modal">
-             <h3>Add New Payout</h3>
-             <form onSubmit={handleAddPayout} className="payouts-modal-form">
-               <label>
-                 Date:
-                 <input 
-                   type="date" 
-                   name="date" 
-                   value={modalData.date} 
-                   onChange={handleModalChange} 
-                   required 
-                 />
-               </label>
-               <label>
-                 Funds Released:
-                 <input 
-                   type="number" 
-                   name="funds_released" 
-                   value={modalData.funds_released} 
-                   onChange={handleModalChange} 
-                   min="0.01" 
-                   step="0.01" 
-                   required 
-                 />
-               </label>
-               {modalError && <div className="payouts-modal-error">{modalError}</div>}
-               <div className="payouts-modal-actions">
-                 <button 
-                   type="submit" 
-                   className="payouts-modal-submit"
-                   disabled={isAddingPayout}
-                 >
-                   {isAddingPayout ? 'Adding...' : 'Add'}
-                 </button>
-                 <button 
-                   type="button" 
-                   className="payouts-modal-cancel" 
-                   onClick={() => setShowModal(false)}
-                   disabled={isAddingPayout}
-                 >
-                   Cancel
-                 </button>
-               </div>
-             </form>
-           </div>
-         </div>
-       )}
-
-       {showBulkDeleteModal && (
-        <div className="payouts-modal-backdrop">
-          <div className="payouts-modal delete-modal">
-            <h3>Delete Multiple Payouts</h3>
-            <div className="delete-confirmation">
-              <p>Are you sure you want to delete {selectedPayouts.length} selected payout(s)?</p>
-              <div className="payout-preview">
-                <p><strong>Selected Payouts:</strong></p>
-                <div className="selected-payouts-list">
-                  {payouts
-                    .filter(payout => selectedPayouts.includes(payout.id))
-                    .slice(0, 5) // Show first 5 for preview
-                    .map(payout => (
-                      <div key={payout.id} className="selected-payout-item">
-                        <span>{formatDate(payout.date)}</span>
-                        <span>{formatAmount(payout.funds_released)}</span>
+                )}
+                <button
+                  className="payouts-new-btn"
+                  onClick={() => setShowModal(true)}
+                >
+                  New
+                </button>
+                <div className="payouts-filter-dropdown-wrapper" ref={filterRef}>
+                  <button
+                    className="payouts-filter-btn"
+                    onClick={() => setShowFilter((prev) => !prev)}
+                  >
+                    Filter &#x25BC;
+                  </button>
+                  {showFilter && (
+                    <div className="payouts-filter-dropdown">
+                      <div className="filter-section">
+                        <label>
+                          Sort by:
+                          <select
+                            value={sortOrder}
+                            onChange={e => setSortOrder(e.target.value)}
+                            style={{ marginLeft: '0.5rem', marginRight: '1rem' }}
+                          >
+                            <option value="desc">Descending date</option>
+                            <option value="asc">Ascending date</option>
+                          </select>
+                        </label>
                       </div>
-                    ))}
-                  {selectedPayouts.length > 5 && (
-                    <div className="more-payouts">
-                      ... and {selectedPayouts.length - 5} more
+                      <div className="filter-section">
+                        <label>
+                          Period:
+                          <input
+                            type="date"
+                            value={startDate}
+                            onChange={e => setStartDate(e.target.value)}
+                            style={{ marginLeft: '0.5rem' }}
+                          />
+                          <span style={{ margin: '0 0.5rem' }}>to</span>
+                          <input
+                            type="date"
+                            value={endDate}
+                            onChange={e => setEndDate(e.target.value)}
+                          />
+                        </label>
+                      </div>
+                      <div className="filter-section">
+                        <button
+                          className="clear-filters-btn"
+                          onClick={() => {
+                            setStartDate('');
+                            setEndDate('');
+                            setSortOrder('desc');
+                          }}
+                        >
+                          Clear Filters
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
+                <button
+                  className="payouts-export-btn"
+                  onClick={exportToCSV}
+                  style={{ marginLeft: '1rem' }}
+                >
+                  Export CSV
+                </button>
               </div>
-              <p className="warning-text">⚠️ This action cannot be undone.</p>
-            </div>
-            <div className="payouts-modal-actions">
-              <button 
-                onClick={handleConfirmBulkDelete} 
-                className="delete-btn"
-              >
-                Delete All
-              </button>
-              <button 
-                onClick={handleCancelBulkDelete} 
-                className="payouts-modal-cancel"
-              >
-                Cancel
-              </button>
             </div>
           </div>
-        </div>
-      )}
+          <div className="payouts-table-content">
+            {/* Modals */}
+            {showModal && (
+              <div className="payouts-modal-backdrop">
+                <div className="payouts-modal">
+                  <h3>Add New Payout</h3>
+                  <form onSubmit={handleAddPayout} className="payouts-modal-form">
+                    <label>
+                      Date:
+                      <input 
+                        type="date" 
+                        name="date" 
+                        value={modalData.date} 
+                        onChange={handleModalChange} 
+                        required 
+                      />
+                    </label>
+                    <label>
+                      Funds Released:
+                      <input 
+                        type="number" 
+                        name="funds_released" 
+                        value={modalData.funds_released} 
+                        onChange={handleModalChange} 
+                        min="0.01" 
+                        step="0.01" 
+                        required 
+                      />
+                    </label>
+                    {modalError && <div className="payouts-modal-error">{modalError}</div>}
+                    <div className="payouts-modal-actions">
+                      <button 
+                        type="submit" 
+                        className="payouts-modal-submit"
+                        disabled={isAddingPayout}
+                      >
+                        {isAddingPayout ? 'Adding...' : 'Add'}
+                      </button>
+                      <button 
+                        type="button" 
+                        className="payouts-modal-cancel" 
+                        onClick={() => setShowModal(false)}
+                        disabled={isAddingPayout}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
 
-      {filteredAndSortedPayouts.length === 0 ? (
-        <div className="no-payouts">
-          <p>No payouts found.</p>
-        </div>
-      ) : (
-        <>
-          <div className="payouts-table-container">
-        <table className="payouts-table">
-          <thead>
-            <tr>
-                  <th>
-                    <input 
-                      type="checkbox" 
-                      onChange={handleSelectAll}
-                      checked={selectedPayouts.length === currentPayouts.length && currentPayouts.length > 0}
-                      ref={input => {
-                        if (input) {
-                          input.indeterminate = selectedPayouts.length > 0 && selectedPayouts.length < currentPayouts.length;
-                        }
-                      }}
-                    />
-                  </th>
-                  <th>S.No.</th>
-              <th>Date</th>
-              <th>Funds Released</th>
-            </tr>
-          </thead>
-          <tbody>
-                                 {currentPayouts.map((payout, index) => {
-                   const isEditing = editingCell?.rowId === payout.id;
-                   const isPending = payout.isPending;
-                   
-                   return (
-                     <React.Fragment key={payout.id}>
-                       <tr className={`payout-row ${isPending ? 'pending-payout' : ''}`}>
-                         <td className="checkbox-cell">
-                           <input 
-                             type="checkbox" 
-                             checked={selectedPayouts.includes(payout.id)}
-                             onChange={() => handleSelectPayout(payout.id)}
-                           />
-                         </td>
-                                                    <td className="serial-number">{indexOfFirstPayout + index + 1}</td>
-                           <td 
-                             className="payout-date editable-cell"
-                             onDoubleClick={() => !isPending && handleCellDoubleClick(payout.id, 'date', payout.date)}
-                           >
-                             {isEditing && editingCell?.field === 'date' ? (
-                               <input
-                                 type="date"
-                                 value={editValue}
-                                 onChange={handleEditChange}
-                                 className="edit-input"
-                               />
-                             ) : (
-                               <span className={isPending ? 'pending-text' : ''}>
-                                 {formatDate(payout.date)}
-                                 {isPending && <span className="pending-indicator"> ⏳</span>}
-                               </span>
-                             )}
-                           </td>
-                           <td 
-                             className="funds-released editable-cell"
-                             onDoubleClick={() => !isPending && handleCellDoubleClick(payout.id, 'funds_released', payout.funds_released)}
-                           >
-                             {isEditing && editingCell?.field === 'funds_released' ? (
-                               <input
-                                 type="number"
-                                 value={editValue}
-                                 onChange={handleEditChange}
-                                 className="edit-input"
-                                 min="0"
-                                 step="0.01"
-                                 placeholder="Enter amount"
-                               />
-                             ) : (
-                               <span className={isPending ? 'pending-text' : ''}>
-                                 {formatAmount(payout.funds_released)}
-                                 {isPending && <span className="pending-indicator"> ⏳</span>}
-                               </span>
-                             )}
-                           </td>
-                       </tr>
-                       {isEditing && (
-                         <tr className="edit-actions-row">
-                           <td colSpan="4">
-                             <div className="edit-actions">
-                               <button onClick={handleSaveEdit} className="save-btn">Save</button>
-                               <button onClick={handleCancelEdit} className="cancel-btn">Cancel</button>
-                             </div>
-                           </td>
-              </tr>
-                       )}
-                     </React.Fragment>
-                   );
-                 })}
-          </tbody>
-        </table>
+            {showBulkDeleteModal && (
+              <div className="payouts-modal-backdrop">
+                <div className="payouts-modal delete-modal">
+                  <h3>Delete Multiple Payouts</h3>
+                  <div className="delete-confirmation">
+                    <p>Are you sure you want to delete {selectedPayouts.length} selected payout(s)?</p>
+                    <div className="payout-preview">
+                      <p><strong>Selected Payouts:</strong></p>
+                      <div className="selected-payouts-list">
+                        {payouts
+                          .filter(payout => selectedPayouts.includes(payout.id))
+                          .slice(0, 5)
+                          .map(payout => (
+                            <div key={payout.id} className="selected-payout-item">
+                              <span>{formatDate(payout.date)}</span>
+                              <span>{formatAmount(payout.funds_released)}</span>
+                            </div>
+                          ))}
+                        {selectedPayouts.length > 5 && (
+                          <div className="more-payouts">
+                            ... and {selectedPayouts.length - 5} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <p className="warning-text">⚠️ This action cannot be undone.</p>
+                  </div>
+                  <div className="payouts-modal-actions">
+                    <button 
+                      onClick={handleConfirmBulkDelete} 
+                      className="delete-btn"
+                    >
+                      Delete All
+                    </button>
+                    <button 
+                      onClick={handleCancelBulkDelete} 
+                      className="payouts-modal-cancel"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Table and Pagination */}
+            {filteredAndSortedPayouts.length === 0 ? (
+              <div className="no-payouts">
+                <p>No payouts found.</p>
+              </div>
+            ) : (
+              <>
+                <div className="payouts-table-container">
+                  <table className="payouts-table">
+                    <thead>
+                      <tr>
+                        <th>
+                          <input 
+                            type="checkbox" 
+                            onChange={handleSelectAll}
+                            checked={selectedPayouts.length === currentPayouts.length && currentPayouts.length > 0}
+                            ref={input => {
+                              if (input) {
+                                input.indeterminate = selectedPayouts.length > 0 && selectedPayouts.length < currentPayouts.length;
+                              }
+                            }}
+                          />
+                        </th>
+                        <th>S.No.</th>
+                        <th>Date</th>
+                        <th>Funds Released</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentPayouts.map((payout, index) => {
+                        const isEditing = editingCell?.rowId === payout.id;
+                        const isPending = payout.isPending;
+                        return (
+                          <React.Fragment key={payout.id}>
+                            <tr className={`payout-row ${isPending ? 'pending-payout' : ''}`}>
+                              <td className="checkbox-cell">
+                                <input 
+                                  type="checkbox" 
+                                  checked={selectedPayouts.includes(payout.id)}
+                                  onChange={() => handleSelectPayout(payout.id)}
+                                />
+                              </td>
+                              <td className="serial-number">{indexOfFirstPayout + index + 1}</td>
+                              <td 
+                                className="payout-date editable-cell"
+                                onDoubleClick={() => !isPending && handleCellDoubleClick(payout.id, 'date', payout.date)}
+                              >
+                                {isEditing && editingCell?.field === 'date' ? (
+                                  <input
+                                    type="date"
+                                    value={editValue}
+                                    onChange={handleEditChange}
+                                    className="edit-input"
+                                  />
+                                ) : (
+                                  <span className={isPending ? 'pending-text' : ''}>
+                                    {formatDate(payout.date)}
+                                    {isPending && <span className="pending-indicator"> ⏳</span>}
+                                  </span>
+                                )}
+                              </td>
+                              <td 
+                                className="funds-released editable-cell"
+                                onDoubleClick={() => !isPending && handleCellDoubleClick(payout.id, 'funds_released', payout.funds_released)}
+                              >
+                                {isEditing && editingCell?.field === 'funds_released' ? (
+                                  <input
+                                    type="number"
+                                    value={editValue}
+                                    onChange={handleEditChange}
+                                    className="edit-input"
+                                    min="0"
+                                    step="0.01"
+                                    placeholder="Enter amount"
+                                  />
+                                ) : (
+                                  <span className={isPending ? 'pending-text' : ''}>
+                                    {formatAmount(payout.funds_released)}
+                                    {isPending && <span className="pending-indicator"> ⏳</span>}
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                            {isEditing && (
+                              <tr className="edit-actions-row">
+                                <td colSpan="4">
+                                  <div className="edit-actions">
+                                    <button onClick={handleSaveEdit} className="save-btn">Save</button>
+                                    <button onClick={handleCancelEdit} className="cancel-btn">Cancel</button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="pagination-container">
+                    <div className="pagination-info">
+                      <span>
+                        Showing {indexOfFirstPayout + 1} to {Math.min(indexOfLastPayout, filteredAndSortedPayouts.length)} of {filteredAndSortedPayouts.length} payouts
+                      </span>
+                    </div>
+                    <div className="pagination-controls">
+                      <button 
+                        className="pagination-btn"
+                        onClick={goToFirstPage}
+                        disabled={currentPage === 1}
+                      >
+                        « First
+                      </button>
+                      <button 
+                        className="pagination-btn"
+                        onClick={goToPreviousPage}
+                        disabled={currentPage === 1}
+                      >
+                        ‹ Previous
+                      </button>
+                      {getPageNumbers().map((pageNumber, index) => (
+                        <button
+                          key={index}
+                          className={`pagination-btn ${pageNumber === currentPage ? 'active' : ''} ${pageNumber === '...' ? 'disabled' : ''}`}
+                          onClick={() => typeof pageNumber === 'number' && goToPage(pageNumber)}
+                          disabled={pageNumber === '...'}
+                        >
+                          {pageNumber}
+                        </button>
+                      ))}
+                      <button 
+                        className="pagination-btn"
+                        onClick={goToNextPage}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next ›
+                      </button>
+                      <button 
+                        className="pagination-btn"
+                        onClick={goToLastPage}
+                        disabled={currentPage === totalPages}
+                      >
+                        Last »
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="payouts-summary">
+                  <p>Total Payouts: {filteredAndSortedPayouts.length}</p>
+                  <p>Total Amount Released: {formatAmount(filteredAndSortedPayouts.reduce((sum, payout) => sum + Number(payout.funds_released), 0))}</p>
+                </div>
+              </>
+            )}
           </div>
-
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="pagination-container">
-              <div className="pagination-info">
-                <span>
-                  Showing {indexOfFirstPayout + 1} to {Math.min(indexOfLastPayout, filteredAndSortedPayouts.length)} of {filteredAndSortedPayouts.length} payouts
-                </span>
-              </div>
-              <div className="pagination-controls">
-                <button 
-                  className="pagination-btn"
-                  onClick={goToFirstPage}
-                  disabled={currentPage === 1}
-                >
-                  « First
-                </button>
-                <button 
-                  className="pagination-btn"
-                  onClick={goToPreviousPage}
-                  disabled={currentPage === 1}
-                >
-                  ‹ Previous
-                </button>
-                
-                {getPageNumbers().map((pageNumber, index) => (
-                  <button
-                    key={index}
-                    className={`pagination-btn ${pageNumber === currentPage ? 'active' : ''} ${pageNumber === '...' ? 'disabled' : ''}`}
-                    onClick={() => typeof pageNumber === 'number' && goToPage(pageNumber)}
-                    disabled={pageNumber === '...'}
-                  >
-                    {pageNumber}
-                  </button>
-                ))}
-                
-                <button 
-                  className="pagination-btn"
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Next ›
-                </button>
-                <button 
-                  className="pagination-btn"
-                  onClick={goToLastPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Last »
-                </button>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
-      <div className="payouts-summary">
-        <p>Total Payouts: {filteredAndSortedPayouts.length}</p>
-        <p>Total Amount Released: {formatAmount(filteredAndSortedPayouts.reduce((sum, payout) => sum + Number(payout.funds_released), 0))}</p>
+        </div>
+        <div className="payouts-graph-side">
+          <div className="payouts-graphs-stack">
+            <Bar data={barData} options={barOptions} />
+            <div style={{ height: 32 }} />
+            <Bar data={barDataDay} options={barOptionsDay} />
+          </div>
+        </div>
       </div>
     </div>
   );
