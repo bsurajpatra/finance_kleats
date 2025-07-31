@@ -316,6 +316,12 @@
   flex-direction: column;
   gap: 0.5rem;
 }
+
+.filter-section.transactions-type-filter {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
 .filter-section label,
 .transactions-type-filter label {
   font-weight: 500;
@@ -338,10 +344,29 @@
   gap: 1.2rem;
   margin-left: 0;
   margin-top: 0.5rem;
+  flex-direction: row;
+  flex-wrap: nowrap;
 }
 .transactions-type-filter input[type='radio'] {
   margin-right: 0.3rem;
 } 
+
+.clear-filters-btn {
+  background: #e53e3e;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.2s;
+  margin-top: 0.5rem;
+}
+
+.clear-filters-btn:hover {
+  background: #c53030;
+}
 
 .transactions-export-btn {
   background: #38a169;

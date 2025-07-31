@@ -224,6 +224,33 @@ const Payouts = () => {
     setCurrentPage(1);
   }, [sortOrder, startDate, endDate]);
 
+  const exportToCSV = () => {
+    if (filteredAndSortedPayouts.length === 0) return;
+    const headers = [
+      'S.No.',
+      'Date',
+      'Funds Released'
+    ];
+    const rows = filteredAndSortedPayouts.map((payout, idx) => [
+      idx + 1,
+      formatDate(payout.date),
+      payout.funds_released
+    ]);
+    const csvContent =
+      [headers, ...rows]
+        .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+        .join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'payouts.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   if (loading) {
     return (
       <div className="payouts-container">
@@ -253,15 +280,6 @@ const Payouts = () => {
       <div className="payouts-header">
         <h2>All Payouts</h2>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          {selectedPayouts.length > 0 && (
-            <button
-              className="bulk-delete-btn"
-              onClick={handleBulkDeleteClick}
-              style={{ marginRight: '1rem' }}
-            >
-              Delete Selected ({selectedPayouts.length})
-            </button>
-          )}
           <div className="payouts-filter-dropdown-wrapper" ref={filterRef}>
             <button
               className="payouts-filter-btn"
@@ -316,6 +334,22 @@ const Payouts = () => {
               </div>
             )}
           </div>
+          <button
+            className="payouts-export-btn"
+            onClick={exportToCSV}
+            style={{ marginLeft: '1rem' }}
+          >
+            Export CSV
+          </button>
+                    {selectedPayouts.length > 0 && (
+            <button
+              className="bulk-delete-btn"
+              onClick={handleBulkDeleteClick}
+              style={{ marginLeft: '1rem' }}
+            >
+              Delete Selected ({selectedPayouts.length})
+            </button>
+          )}
         </div>
       </div>
 

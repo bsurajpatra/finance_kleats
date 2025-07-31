@@ -519,6 +519,19 @@ const Transactions = () => {
                     Credits only
                   </label>
                 </div>
+                <div className="filter-section">
+                  <button
+                    className="clear-filters-btn"
+                    onClick={() => {
+                      setStartDate('');
+                      setEndDate('');
+                      setSortOrder('desc');
+                      setTypeFilter('all');
+                    }}
+                  >
+                    Clear Filters
+                  </button>
+                </div>
               </div>
             )}
           </div>

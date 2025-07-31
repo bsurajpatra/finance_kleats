@@ -516,3 +516,19 @@
 .clear-filters-btn:hover {
   background: #c53030;
 }
+
+/* Export Button Styles */
+.payouts-export-btn {
+  background: #38a169;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.payouts-export-btn:hover {
+  background: #2f855a;
+}
