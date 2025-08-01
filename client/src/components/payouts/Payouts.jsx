@@ -565,7 +565,7 @@ const Payouts = () => {
         <div className="payouts-table-side">
           <div className="payouts-table-header">
             <div className="payouts-header">
-              <h2>Payouts</h2>
+      <h2>Payouts</h2>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 {selectedPayouts.length > 0 && (
                   <button
@@ -751,9 +751,9 @@ const Payouts = () => {
             ) : (
               <>
                 <div className="payouts-table-container">
-                  <table className="payouts-table">
-                    <thead>
-                      <tr>
+        <table className="payouts-table">
+          <thead>
+            <tr>
                         <th>
                           <input 
                             type="checkbox" 
@@ -767,11 +767,11 @@ const Payouts = () => {
                           />
                         </th>
                         <th>S.No.</th>
-                        <th>Date</th>
-                        <th>Funds Released</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+              <th>Date</th>
+              <th>Funds Released</th>
+            </tr>
+          </thead>
+          <tbody>
                       {currentPayouts.map((payout, index) => {
                         const isEditing = editingCell?.rowId === payout.id;
                         const isPending = payout.isPending;
@@ -834,13 +834,13 @@ const Payouts = () => {
                                     <button onClick={handleCancelEdit} className="cancel-btn">Cancel</button>
                                   </div>
                                 </td>
-                              </tr>
+              </tr>
                             )}
                           </React.Fragment>
                         );
                       })}
-                    </tbody>
-                  </table>
+          </tbody>
+        </table>
                 </div>
                 {/* Pagination Controls */}
                 {totalPages > 1 && (

@@ -56,9 +56,8 @@ const Signin = ({ onSignIn }) => {
         </form>
       </div>
       <footer className="signin-footer">
-        <div>KL Eats Finance - Copyright © 2025 - Licensed under GPL</div>
+        <div>KL Eats Finance - Copyright © 2025 - Licensed under GPL v3</div>
         <div><a href="https://kleats.in" target="_blank" rel="noopener noreferrer">KL Eats</a> (A Unit of Equitech Lab Private Limited)</div>
-        <div>All Rights Reserved.</div>
       </footer>
     </div>
   );

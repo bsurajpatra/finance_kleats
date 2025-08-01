@@ -67,7 +67,7 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
       </main>
       
       <footer className="dashboard-footer">
-        <div>KL Eats Finance - Copyright © {new Date().getFullYear()} - Licensed under GPL</div>
+        <div>KL Eats Finance - Copyright © {new Date().getFullYear()} - Licensed under GPL v3</div>
       </footer>
     </div>
   );
