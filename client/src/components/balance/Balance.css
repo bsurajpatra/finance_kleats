@@ -316,6 +316,107 @@
   border-radius: 8px;
 }
 
+/* Recent Payouts Section */
+.recent-payouts {
+  margin-top: 2rem;
+}
+
+.payouts-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.payouts-header h3 {
+  color: #222;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.payouts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.payout-item {
+  display: flex;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  transition: all 0.2s;
+  gap: 1rem;
+  border-left: 4px solid #4caf50;
+}
+
+.payout-item:hover {
+  background: #f5f5f5;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(44, 44, 44, 0.08);
+}
+
+.payout-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #e8f5e8;
+  color: #4caf50;
+}
+
+.payout-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.payout-info {
+  flex: 1;
+}
+
+.payout-description {
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 0.25rem;
+  font-size: 1rem;
+}
+
+.payout-date {
+  font-size: 0.85rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.payout-amount {
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  min-width: 120px;
+  text-align: center;
+}
+
+.payout-amount.positive {
+  background: #e8f5e8;
+  color: #4caf50;
+}
+
+.no-payouts {
+  text-align: center;
+  padding: 3rem;
+  color: #666;
+  background: #fafafa;
+  border-radius: 8px;
+}
+
 .empty-icon {
   width: 60px;
   height: 60px;

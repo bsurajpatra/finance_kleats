@@ -84,7 +84,6 @@ app.get('/health', async (req, res) => {
 
 app.listen(PORT, async () => {
   console.log(`🚀 KL Eats Finance Server running on port ${PORT}`)
-  console.log(`🌐 CORS enabled for origin: ${allowedOrigin}`)
   
   await checkDatabaseConnection()
 }) 
