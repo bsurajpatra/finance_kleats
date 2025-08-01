@@ -317,14 +317,17 @@
 }
 
 /* Recent Payouts Section */
-.recent-payouts {
-  margin-top: 2rem;
-}
+  .recent-payouts {
+    margin-top: 1.5rem;
+  }
 
 .payouts-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   margin-bottom: 1.5rem;
+  padding-top: 1rem;
+  min-height: 60px;
 }
 
 .payouts-header h3 {
@@ -334,7 +337,9 @@
   margin: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  text-align: center;
 }
 
 .payouts-list {
@@ -477,28 +482,349 @@
 
 @media (max-width: 768px) {
   .balance-container {
-    padding: 1rem;
+    padding: 0.6rem;
+    padding-bottom: 0.3rem;
   }
   
   .balance-card {
-    padding: 1.5rem;
+    padding: 1rem;
+    border-radius: 14px;
+  }
+  
+  .balance-header {
+    margin-bottom: 0.8rem;
+  }
+  
+  .balance-icon {
+    width: 32px;
+    height: 32px;
+    margin-right: 0.8rem;
+  }
+  
+  .balance-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .balance-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .refresh-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0.4rem;
+  }
+  
+  .refresh-btn svg {
+    width: 16px;
+    height: 16px;
   }
   
   .balance-amount {
-    font-size: 2.5rem;
+    font-size: 2rem;
   }
   
-  .transaction-item {
-    padding: 0.75rem 1rem;
+  .balance-indicator {
+    font-size: 0.8rem;
+    gap: 0.4rem;
   }
   
-  .transaction-amount {
-    font-size: 1rem;
-    min-width: 100px;
-    padding: 0.4rem 0.8rem;
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .balance-subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .transactions-header h3,
+  .payouts-header h3 {
+    font-size: 1.1rem;
+  }
+  
+  .header-icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .transaction-item,
+  .payout-item {
+    padding: 0.6rem 0.8rem;
+    gap: 0.8rem;
+  }
+  
+  .transaction-icon,
+  .payout-icon {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .transaction-icon svg,
+  .payout-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .transaction-description,
+  .payout-description {
+    font-size: 0.9rem;
+  }
+  
+  .transaction-date,
+  .payout-date {
+    font-size: 0.75rem;
+  }
+  
+  .transaction-amount,
+  .payout-amount {
+    font-size: 0.9rem;
+    min-width: 90px;
+    padding: 0.3rem 0.6rem;
+  }
+  
+  .recent-payouts {
+    margin-top: 1rem;
+    margin-bottom: 0.3rem;
+  }
+  
+  .payouts-header {
+    padding-top: 0.8rem;
+    min-height: 50px;
   }
   
   .shape {
     display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .balance-container {
+    padding: 0.4rem;
+    padding-bottom: 0.2rem;
+  }
+  
+  .balance-card {
+    padding: 0.8rem;
+    border-radius: 12px;
+  }
+  
+  .balance-header {
+    margin-bottom: 0.6rem;
+  }
+  
+  .balance-icon {
+    width: 28px;
+    height: 28px;
+    margin-right: 0.6rem;
+  }
+  
+  .balance-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .balance-header h2 {
+    font-size: 1rem;
+  }
+  
+  .refresh-btn {
+    width: 28px;
+    height: 28px;
+    padding: 0.3rem;
+  }
+  
+  .refresh-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .balance-amount {
+    font-size: 1.8rem;
+  }
+  
+  .balance-indicator {
+    font-size: 0.75rem;
+    gap: 0.3rem;
+  }
+  
+  .pulse-dot {
+    width: 5px;
+    height: 5px;
+  }
+  
+  .balance-subtitle {
+    font-size: 0.75rem;
+  }
+  
+  .transactions-header h3,
+  .payouts-header h3 {
+    font-size: 1rem;
+  }
+  
+  .header-icon {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .transaction-item,
+  .payout-item {
+    padding: 0.5rem 0.6rem;
+    gap: 0.6rem;
+  }
+  
+  .transaction-icon,
+  .payout-icon {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .transaction-icon svg,
+  .payout-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .transaction-description,
+  .payout-description {
+    font-size: 0.85rem;
+  }
+  
+  .transaction-date,
+  .payout-date {
+    font-size: 0.7rem;
+  }
+  
+  .transaction-amount,
+  .payout-amount {
+    font-size: 0.85rem;
+    min-width: 80px;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  .recent-payouts {
+    margin-top: 0.8rem;
+    margin-bottom: 0.2rem;
+  }
+  
+  .payouts-header {
+    padding-top: 0.6rem;
+    min-height: 45px;
+  }
+}
+
+@media (max-width: 480px) {
+  .balance-container {
+    padding: 0.3rem;
+    padding-bottom: 0.1rem;
+  }
+  
+  .balance-card {
+    padding: 0.6rem;
+    border-radius: 10px;
+  }
+  
+  .balance-header {
+    margin-bottom: 0.6rem;
+  }
+  
+  .balance-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 0.5rem;
+  }
+  
+  .balance-icon svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .balance-header h2 {
+    font-size: 0.9rem;
+  }
+  
+  .refresh-btn {
+    width: 24px;
+    height: 24px;
+    padding: 0.25rem;
+  }
+  
+  .refresh-btn svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .balance-amount {
+    font-size: 1.6rem;
+  }
+  
+  .balance-indicator {
+    font-size: 0.7rem;
+    gap: 0.25rem;
+  }
+  
+  .pulse-dot {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .balance-subtitle {
+    font-size: 0.7rem;
+  }
+  
+  .transactions-header h3,
+  .payouts-header h3 {
+    font-size: 0.9rem;
+  }
+  
+  .header-icon {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .transaction-item,
+  .payout-item {
+    padding: 0.4rem 0.5rem;
+    gap: 0.5rem;
+  }
+  
+  .transaction-icon,
+  .payout-icon {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .transaction-icon svg,
+  .payout-icon svg {
+    width: 12px;
+    height: 12px;
+  }
+  
+  .transaction-description,
+  .payout-description {
+    font-size: 0.8rem;
+  }
+  
+  .transaction-date,
+  .payout-date {
+    font-size: 0.65rem;
+  }
+  
+  .transaction-amount,
+  .payout-amount {
+    font-size: 0.8rem;
+    min-width: 70px;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .recent-payouts {
+    margin-top: 0.6rem;
+    margin-bottom: 0.1rem;
+  }
+  
+  .payouts-header {
+    padding-top: 0.5rem;
+    min-height: 40px;
   }
 } 
