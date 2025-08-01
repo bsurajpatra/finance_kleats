@@ -10,11 +10,41 @@ import payoutRoutes from './routes/payoutRoutes.js';
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT
+const PORT = process.env.PORT || 3001
+
+const allowedOrigin = process.env.ALLOWED_ORIGIN
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigin === origin) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}
 
 // Middleware
-app.use(cors())
+app.use(cors(corsOptions))
 app.use(express.json())
+
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', allowedOrigin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 
 async function checkDatabaseConnection() {
   try {
@@ -54,8 +84,7 @@ app.get('/health', async (req, res) => {
 
 app.listen(PORT, async () => {
   console.log(`🚀 KL Eats Finance Server running on port ${PORT}`)
-  console.log(`📊 API available at http://localhost:${PORT}/api`)
-  console.log(`🏥 Health check at http://localhost:${PORT}/health`)
+  console.log(`🌐 CORS enabled for origin: ${allowedOrigin}`)
   
   await checkDatabaseConnection()
 }) 
