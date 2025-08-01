@@ -11,10 +11,18 @@ const EyeOffIcon = () => (
 
 const Signin = ({ onSignIn }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSignIn(e);
+    setIsLoading(true);
+    try {
+      await onSignIn(e);
+    } catch (error) {
+      console.error('Signin error:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -52,7 +60,9 @@ const Signin = ({ onSignIn }) => {
               </button>
             </div>
           </div>
-          <button type="submit" className="signin-button">Sign In</button>
+          <button type="submit" className="signin-button" disabled={isLoading}>
+            {isLoading ? 'Signing in...' : 'Sign In'}
+          </button>
         </form>
       </div>
       <footer className="signin-footer">

@@ -221,6 +221,19 @@
   transform: translateY(0px) scale(0.98);
 }
 
+.signin-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.signin-button:disabled:hover {
+  background: #ccc;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
 .signin-footer {
   position: fixed;
   bottom: 0;
