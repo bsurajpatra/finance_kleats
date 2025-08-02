@@ -210,6 +210,23 @@
   gap: 0.5rem;
 }
 
+.transactions-header-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.transactions-header-left h3 {
+  color: #222;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .header-icon {
   width: 20px;
   height: 20px;
@@ -324,7 +341,7 @@
 .payouts-header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   margin-bottom: 1.5rem;
   padding-top: 1rem;
   min-height: 60px;
@@ -337,9 +354,26 @@
   margin: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
-  text-align: center;
+}
+
+.payouts-header-left {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 0.8rem;
+  padding-top: 0.5rem;
+  min-height: 40px;
+}
+
+.payouts-header-left h3 {
+  color: #222;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .payouts-list {
@@ -540,7 +574,9 @@
   }
   
   .transactions-header h3,
-  .payouts-header h3 {
+  .payouts-header h3,
+  .transactions-header-left h3,
+  .payouts-header-left h3 {
     font-size: 1.1rem;
   }
   
@@ -591,6 +627,13 @@
   
   .payouts-header {
     padding-top: 0.8rem;
+    padding-bottom: 0.3rem;
+    min-height: 50px;
+  }
+  
+  .payouts-header-left {
+    padding-top: 0.8rem;
+    padding-bottom: 0.3rem;
     min-height: 50px;
   }
   
@@ -659,7 +702,9 @@
   }
   
   .transactions-header h3,
-  .payouts-header h3 {
+  .payouts-header h3,
+  .transactions-header-left h3,
+  .payouts-header-left h3 {
     font-size: 1rem;
   }
   
@@ -710,6 +755,13 @@
   
   .payouts-header {
     padding-top: 0.6rem;
+    padding-bottom: 0.2rem;
+    min-height: 45px;
+  }
+  
+  .payouts-header-left {
+    padding-top: 0.6rem;
+    padding-bottom: 0.2rem;
     min-height: 45px;
   }
 }
@@ -774,7 +826,9 @@
   }
   
   .transactions-header h3,
-  .payouts-header h3 {
+  .payouts-header h3,
+  .transactions-header-left h3,
+  .payouts-header-left h3 {
     font-size: 0.9rem;
   }
   
@@ -825,6 +879,13 @@
   
   .payouts-header {
     padding-top: 0.5rem;
+    padding-bottom: 0.1rem;
+    min-height: 40px;
+  }
+  
+  .payouts-header-left {
+    padding-top: 0.5rem;
+    padding-bottom: 0.1rem;
     min-height: 40px;
   }
 } 
