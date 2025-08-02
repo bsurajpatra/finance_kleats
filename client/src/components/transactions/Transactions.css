@@ -492,28 +492,9 @@
 .editable-cell {
   cursor: pointer;
   position: relative;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
 }
 .editable-cell:hover {
   background-color: #f0f8ff;
-}
-
-.editable-cell:active {
-  background-color: #e6f3ff;
-}
-
-@media (max-width: 768px) {
-  .editable-cell {
-    cursor: default;
-  }
-  
-  .editable-cell:active {
-    background-color: #e6f3ff;
-    transition: background-color 0.3s ease;
-  }
 }
 .edit-input {
   width: 100%;
