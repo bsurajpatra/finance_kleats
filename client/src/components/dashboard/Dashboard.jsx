@@ -44,7 +44,7 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
           className={`nav-tab ${activeTab === 'canteen' ? 'active' : ''}`}
           onClick={() => onTabChange('canteen')}
         >
-          Canteen
+          Payments
         </button>
       </nav>
 
