@@ -382,6 +382,51 @@
 }
 .transactions-export-btn:hover {
   background: #2f855a;
+}
+
+.transactions-export-dropdown-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.transactions-export-dropdown {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  min-width: 180px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  z-index: 10;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.export-option {
+  background: none;
+  border: none;
+  padding: 0.5rem 0.8rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #333;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.export-option:hover {
+  background: #f7fafc;
+  color: #2d3748;
+}
+
+.export-option span {
+  font-size: 1.1rem;
 } 
 
 .transactions-new-btn {
@@ -999,6 +1044,18 @@
     justify-content: center;
   }
   
+  .transactions-export-dropdown {
+    min-width: 160px;
+    right: 50%;
+    transform: translateX(50%);
+    padding: 0.4rem;
+  }
+  
+  .export-option {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.85rem;
+  }
+  
   /* Mobile table improvements */
   .transactions-table-container {
     border-radius: 6px;
@@ -1195,6 +1252,18 @@
     justify-content: center;
   }
   
+  .transactions-export-dropdown {
+    min-width: 140px;
+    right: 50%;
+    transform: translateX(50%);
+    padding: 0.3rem;
+  }
+  
+  .export-option {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
   /* Mobile pagination improvements */
   .pagination-btn {
     padding: 0.3rem 0.5rem;
@@ -1351,6 +1420,18 @@
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+  
+  .transactions-export-dropdown {
+    min-width: 120px;
+    right: 50%;
+    transform: translateX(50%);
+    padding: 0.25rem;
+  }
+  
+  .export-option {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
   }
   
   /* Mobile pagination improvements */

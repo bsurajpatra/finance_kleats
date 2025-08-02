@@ -35,6 +35,7 @@ const Payouts = () => {
   });
   const [modalError, setModalError] = useState('');
   const [isAddingPayout, setIsAddingPayout] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
 
   const filterRef = useRef(null);
 
@@ -400,6 +401,108 @@ const Payouts = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setShowExportDropdown(false);
+  };
+
+  const exportToTXT = () => {
+    if (filteredAndSortedPayouts.length === 0) return;
+    const headers = [
+      'S.No.',
+      'Date',
+      'Funds Released'
+    ];
+    const rows = filteredAndSortedPayouts.map((payout, idx) => [
+      idx + 1,
+      formatDate(payout.date),
+      payout.funds_released
+    ]);
+    
+    let txtContent = 'PAYOUTS REPORT\n';
+    txtContent += '='.repeat(50) + '\n\n';
+    txtContent += headers.join('\t') + '\n';
+    txtContent += '-'.repeat(100) + '\n';
+    
+    rows.forEach(row => {
+      txtContent += row.join('\t') + '\n';
+    });
+    
+    txtContent += '\n' + '='.repeat(50) + '\n';
+    txtContent += `Total Payouts: ${filteredAndSortedPayouts.length}\n`;
+    txtContent += `Generated on: ${new Date().toLocaleString()}\n`;
+    
+    const blob = new Blob([txtContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'payouts.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExportDropdown(false);
+  };
+
+  const exportToPDF = () => {
+    if (filteredAndSortedPayouts.length === 0) return;
+    
+    const headers = [
+      'S.No.',
+      'Date',
+      'Funds Released'
+    ];
+    const rows = filteredAndSortedPayouts.map((payout, idx) => [
+      idx + 1,
+      formatDate(payout.date),
+      payout.funds_released
+    ]);
+    
+    let htmlContent = `
+      <html>
+        <head>
+          <title>Payouts Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Payouts Report</h1>
+            <p>Generated on: ${new Date().toLocaleString()}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                ${headers.map(header => `<th>${header}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+          <div class="footer">
+            <p>Total Payouts: ${filteredAndSortedPayouts.length}</p>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    // Create a new window with the HTML content
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(htmlContent);
+    newWindow.document.close();
+    
+    // Wait for content to load then print
+    newWindow.onload = function() {
+      newWindow.print();
+      newWindow.close();
+    };
+    
+    setShowExportDropdown(false);
   };
 
   // --- Bar Graph Data Preparation ---
@@ -636,13 +739,28 @@ const Payouts = () => {
                     </div>
                   )}
                 </div>
-                <button
-                  className="payouts-export-btn"
-                  onClick={exportToCSV}
-                  style={{ marginLeft: '1rem' }}
-                >
-                  Export CSV
-                </button>
+                <div className="payouts-export-dropdown-wrapper">
+                  <button
+                    className="payouts-export-btn"
+                    onClick={() => setShowExportDropdown(!showExportDropdown)}
+                    style={{ marginLeft: '1rem' }}
+                  >
+                    Export ▼
+                  </button>
+                  {showExportDropdown && (
+                    <div className="payouts-export-dropdown">
+                      <button onClick={exportToCSV} className="export-option">
+                        <span>📄</span> Export as CSV
+                      </button>
+                      <button onClick={exportToTXT} className="export-option">
+                        <span>📝</span> Export as TXT
+                      </button>
+                      <button onClick={exportToPDF} className="export-option">
+                        <span>📄</span> Export as PDF
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

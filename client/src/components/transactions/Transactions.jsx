@@ -30,6 +30,7 @@ const Transactions = () => {
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [transactionsPerPage] = useState(20);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
 
 
   const filterRef = useRef(null);
@@ -407,6 +408,129 @@ const Transactions = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setShowExportDropdown(false);
+  };
+
+  const exportToTXT = () => {
+    if (filteredTransactions.length === 0) return;
+    const headers = [
+      'S.No.',
+      'Date',
+      'Description',
+      'Credit',
+      'Debit',
+      'Previous Balance',
+      'Remaining Balance',
+      'Notes'
+    ];
+    const rows = filteredTransactions.map((tx, idx) => [
+      idx + 1,
+      formatDate(tx.date),
+      tx.description || 'N/A',
+      tx.credit > 0 ? tx.credit : '',
+      tx.debit > 0 ? tx.debit : '',
+      tx.previous_balance,
+      tx.remaining_balance,
+      tx.notes || ''
+    ]);
+    
+    let txtContent = 'TRANSACTIONS REPORT\n';
+    txtContent += '='.repeat(50) + '\n\n';
+    txtContent += headers.join('\t') + '\n';
+    txtContent += '-'.repeat(100) + '\n';
+    
+    rows.forEach(row => {
+      txtContent += row.join('\t') + '\n';
+    });
+    
+    txtContent += '\n' + '='.repeat(50) + '\n';
+    txtContent += `Total Transactions: ${filteredTransactions.length}\n`;
+    txtContent += `Generated on: ${new Date().toLocaleString()}\n`;
+    
+    const blob = new Blob([txtContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'transactions.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExportDropdown(false);
+  };
+
+  const exportToPDF = () => {
+    if (filteredTransactions.length === 0) return;
+    
+    // Create a simple HTML table for PDF conversion
+    const headers = [
+      'S.No.',
+      'Date',
+      'Description',
+      'Credit',
+      'Debit',
+      'Previous Balance',
+      'Remaining Balance',
+      'Notes'
+    ];
+    const rows = filteredTransactions.map((tx, idx) => [
+      idx + 1,
+      formatDate(tx.date),
+      tx.description || 'N/A',
+      tx.credit > 0 ? tx.credit : '',
+      tx.debit > 0 ? tx.debit : '',
+      tx.previous_balance,
+      tx.remaining_balance,
+      tx.notes || ''
+    ]);
+    
+    let htmlContent = `
+      <html>
+        <head>
+          <title>Transactions Report</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; font-weight: bold; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #666; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Transactions Report</h1>
+            <p>Generated on: ${new Date().toLocaleString()}</p>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                ${headers.map(header => `<th>${header}</th>`).join('')}
+              </tr>
+            </thead>
+            <tbody>
+              ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
+            </tbody>
+          </table>
+          <div class="footer">
+            <p>Total Transactions: ${filteredTransactions.length}</p>
+          </div>
+        </body>
+      </html>
+    `;
+    
+    // Create a new window with the HTML content
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(htmlContent);
+    newWindow.document.close();
+    
+    // Wait for content to load then print
+    newWindow.onload = function() {
+      newWindow.print();
+      newWindow.close();
+    };
+    
+    setShowExportDropdown(false);
   };
 
   const handleModalChange = (e) => {
@@ -613,13 +737,28 @@ const Transactions = () => {
               </div>
             )}
           </div>
-          <button
-            className="transactions-export-btn"
-            onClick={exportToCSV}
-            style={{ marginLeft: '1rem' }}
-          >
-            Export CSV
-          </button>
+          <div className="transactions-export-dropdown-wrapper">
+            <button
+              className="transactions-export-btn"
+              onClick={() => setShowExportDropdown(!showExportDropdown)}
+              style={{ marginLeft: '1rem' }}
+            >
+              Export ▼
+            </button>
+            {showExportDropdown && (
+              <div className="transactions-export-dropdown">
+                <button onClick={exportToCSV} className="export-option">
+                  <span>📄</span> Export as CSV
+                </button>
+                <button onClick={exportToTXT} className="export-option">
+                  <span>📝</span> Export as TXT
+                </button>
+                <button onClick={exportToPDF} className="export-option">
+                  <span>📄</span> Export as PDF
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
