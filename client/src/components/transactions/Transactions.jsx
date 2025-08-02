@@ -30,11 +30,27 @@ const Transactions = () => {
   const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [transactionsPerPage] = useState(20);
+  const [longPressTimer, setLongPressTimer] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   const filterRef = useRef(null);
 
   useEffect(() => {
     fetchTransactions();
+  }, []);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+    };
   }, []);
 
   // Reset to first page when filters change
@@ -96,8 +112,34 @@ const Transactions = () => {
   };
 
   const handleCellDoubleClick = (rowId, field, value) => {
-    setEditingCell({ rowId, field, value });
-    setEditValue(value);
+    if (!isMobile) {
+      setEditingCell({ rowId, field, value });
+      setEditValue(value);
+    }
+  };
+
+  const handleCellMouseDown = (rowId, field, value) => {
+    if (isMobile) {
+      const timer = setTimeout(() => {
+        setEditingCell({ rowId, field, value });
+        setEditValue(value);
+      }, 3000); // 3 seconds
+      setLongPressTimer(timer);
+    }
+  };
+
+  const handleCellMouseUp = () => {
+    if (isMobile && longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const handleCellMouseLeave = () => {
+    if (isMobile && longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
   };
 
   const handleEditChange = (e) => {
@@ -801,6 +843,11 @@ const Transactions = () => {
                       <td 
                         className="editable-cell"
                         onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'date', transaction.date)}
+                        onMouseDown={() => !isPending && handleCellMouseDown(transaction.id, 'date', transaction.date)}
+                        onMouseUp={handleCellMouseUp}
+                        onMouseLeave={handleCellMouseLeave}
+                        onTouchStart={() => !isPending && handleCellMouseDown(transaction.id, 'date', transaction.date)}
+                        onTouchEnd={handleCellMouseUp}
                       >
                         {isEditing && editingCell?.field === 'date' ? (
                           <input
@@ -819,6 +866,11 @@ const Transactions = () => {
                       <td 
                         className="editable-cell description"
                         onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'description', transaction.description || '')}
+                        onMouseDown={() => !isPending && handleCellMouseDown(transaction.id, 'description', transaction.description || '')}
+                        onMouseUp={handleCellMouseUp}
+                        onMouseLeave={handleCellMouseLeave}
+                        onTouchStart={() => !isPending && handleCellMouseDown(transaction.id, 'description', transaction.description || '')}
+                        onTouchEnd={handleCellMouseUp}
                       >
                         {isEditing && editingCell?.field === 'description' ? (
                           <input
@@ -836,6 +888,11 @@ const Transactions = () => {
                       <td 
                         className={`amount credit ${transaction.credit > 0 ? 'positive' : ''} editable-cell`}
                         onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'credit', transaction.credit || 0)}
+                        onMouseDown={() => !isPending && handleCellMouseDown(transaction.id, 'credit', transaction.credit || 0)}
+                        onMouseUp={handleCellMouseUp}
+                        onMouseLeave={handleCellMouseLeave}
+                        onTouchStart={() => !isPending && handleCellMouseDown(transaction.id, 'credit', transaction.credit || 0)}
+                        onTouchEnd={handleCellMouseUp}
                       >
                         {isEditing && editingCell?.field === 'credit' ? (
                           <input
@@ -856,6 +913,11 @@ const Transactions = () => {
                       <td 
                         className={`amount debit ${transaction.debit > 0 ? 'negative' : ''} editable-cell`}
                         onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'debit', transaction.debit || 0)}
+                        onMouseDown={() => !isPending && handleCellMouseDown(transaction.id, 'debit', transaction.debit || 0)}
+                        onMouseUp={handleCellMouseUp}
+                        onMouseLeave={handleCellMouseLeave}
+                        onTouchStart={() => !isPending && handleCellMouseDown(transaction.id, 'debit', transaction.debit || 0)}
+                        onTouchEnd={handleCellMouseUp}
                       >
                         {isEditing && editingCell?.field === 'debit' ? (
                           <input
@@ -886,6 +948,11 @@ const Transactions = () => {
                       <td 
                         className="editable-cell notes"
                         onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'notes', transaction.notes || '')}
+                        onMouseDown={() => !isPending && handleCellMouseDown(transaction.id, 'notes', transaction.notes || '')}
+                        onMouseUp={handleCellMouseUp}
+                        onMouseLeave={handleCellMouseLeave}
+                        onTouchStart={() => !isPending && handleCellMouseDown(transaction.id, 'notes', transaction.notes || '')}
+                        onTouchEnd={handleCellMouseUp}
                       >
                         {isEditing && editingCell?.field === 'notes' ? (
                           <input
