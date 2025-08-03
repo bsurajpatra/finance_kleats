@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Signin from './components/signin/Signin';
 import Dashboard from './components/dashboard/Dashboard';
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
@@ -35,13 +37,33 @@ function App() {
   };
 
   return (
-    <>
-      {!isAuthenticated ? (
-        <Signin onSignIn={handleSignIn} />
-      ) : (
-        <Dashboard onLogout={handleLogout} onTabChange={handleTabChange} activeTab={activeTab} />
-      )}
-    </>
+    <Router>
+      <Routes>
+        <Route
+          path="/signin"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard" />
+            ) : (
+              <Signin onSignIn={handleSignIn} />
+            )
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Dashboard
+                onLogout={handleLogout}
+                onTabChange={handleTabChange}
+                activeTab={activeTab}
+              />
+            </PrivateRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/signin"} />} />
+      </Routes>
+    </Router>
   );
 }
 
