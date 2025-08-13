@@ -469,8 +469,20 @@
   
   .payouts-header {
     flex-direction: column;
-    gap: 1rem;
-    align-items: flex-start;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .payouts-header h2 {
+    text-align: center;
+    width: 100%;
+  }
+  .payouts-header > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
   }
   
   .payouts-table th,
@@ -497,15 +509,122 @@
   }
   
   .payouts-export-dropdown {
-    min-width: 160px;
-    right: 50%;
-    transform: translateX(50%);
+    min-width: 220px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: 90vw;
+    width: max-content;
     padding: 0.4rem;
+  }
+  /* Keep filter dropdown inside viewport on mobile */
+  .payouts-filter-dropdown-wrapper {
+    margin-left: 0;
+  }
+  .payouts-filter-dropdown {
+    right: 50%;
+    left: auto;
+    transform: translateX(50%);
+    min-width: 280px;
+    max-width: 90vw;
+    padding: 0.8rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   }
   
   .export-option {
     padding: 0.4rem 0.6rem;
     font-size: 0.85rem;
+  }
+
+  /* Mobile button sizing */
+  .payouts-new-btn,
+  .payouts-export-btn,
+  .payouts-filter-btn,
+  .bulk-delete-btn {
+    padding: 0.18rem 0.5rem;
+    font-size: 0.78rem;
+    min-width: 60px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .payouts-new-btn { margin-right: 0; }
+}
+
+@media (max-width: 600px) {
+  .payouts-container {
+    padding: 0.8rem;
+  }
+  .payouts-header h2 {
+    font-size: 1.2rem;
+  }
+  .payouts-table th,
+  .payouts-table td {
+    padding: 0.6rem 0.4rem;
+    font-size: 0.8rem;
+  }
+  .payouts-export-dropdown {
+    min-width: 200px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: 90vw;
+    width: max-content;
+    padding: 0.3rem;
+  }
+  .export-option {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  .payouts-new-btn,
+  .payouts-export-btn,
+  .payouts-filter-btn,
+  .bulk-delete-btn {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.74rem;
+    min-width: 52px;
+    height: 26px;
+  }
+}
+
+@media (max-width: 480px) {
+  .payouts-container {
+    padding: 0.6rem;
+  }
+  .payouts-header h2 {
+    font-size: 1.1rem;
+  }
+  .payouts-table th,
+  .payouts-table td {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.75rem;
+  }
+  .payouts-table {
+    min-width: 450px;
+  }
+  .payouts-export-dropdown {
+    min-width: 180px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: 90vw;
+    width: max-content;
+    padding: 0.25rem;
+  }
+  .export-option {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+  }
+  .payouts-new-btn,
+  .payouts-export-btn,
+  .payouts-filter-btn,
+  .bulk-delete-btn {
+    padding: 0.1rem 0.35rem;
+    font-size: 0.68rem;
+    min-width: 46px;
+    height: 22px;
   }
 }
 
@@ -820,4 +939,32 @@
 
 .payouts-table-content {
   width: 100%;
+}
+
+/* Charts sizing and centering */
+.payout-chart {
+  height: 360px;
+}
+
+@media (max-width: 768px) {
+  .payouts-graph-side {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .payout-chart {
+    height: 420px;
+  }
+}
+
+@media (max-width: 600px) {
+  .payout-chart {
+    height: 440px;
+  }
+}
+
+@media (max-width: 480px) {
+  .payout-chart {
+    height: 460px;
+  }
 }

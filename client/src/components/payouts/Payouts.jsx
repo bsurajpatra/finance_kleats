@@ -528,6 +528,7 @@ const Payouts = () => {
 
   const barOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       title: {
@@ -586,6 +587,7 @@ const Payouts = () => {
 
   const barOptionsDay = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
       title: {
@@ -1021,11 +1023,14 @@ const Payouts = () => {
           </div>
         </div>
         <div className="payouts-graph-side">
-          <div className="payouts-graphs-stack">
+        <div className="payouts-graphs-stack">
+          <div className="payout-chart">
             <Bar data={barData} options={barOptions} />
-            <div style={{ height: 32 }} />
+          </div>
+          <div className="payout-chart">
             <Bar data={barDataDay} options={barOptionsDay} />
           </div>
+        </div>
         </div>
       </div>
     </div>
