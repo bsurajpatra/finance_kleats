@@ -4,9 +4,12 @@ import { verifyJWT } from '../controllers/authController.js'
 
 const router = express.Router()
 
+// Protect all transaction routes consistently at router level
+router.use(verifyJWT)
+
 router.get('/', fetchTransactions)
-router.post('/', verifyJWT, addTransaction)
-router.put('/:id', verifyJWT, updateTransactionController)
-router.delete('/:id', verifyJWT, deleteTransactionController)
+router.post('/', addTransaction)
+router.put('/:id', updateTransactionController)
+router.delete('/:id', deleteTransactionController)
 
 export default router 

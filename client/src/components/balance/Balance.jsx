@@ -9,43 +9,26 @@ const Balance = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchTransactions();
-    fetchPayouts();
+    fetchSummary();
   }, []);
 
-  const fetchTransactions = async () => {
+  const fetchSummary = async () => {
     try {
       setLoading(true);
-      const response = await authFetch(API_ENDPOINTS.TRANSACTIONS);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch transactions');
-      }
-      
+      const response = await authFetch(API_ENDPOINTS.SUMMARY);
+      if (!response.ok) throw new Error('Failed to fetch summary');
       const data = await response.json();
-      setTransactions(data);
+      // Ensure deterministic ordering for transactions used to compute balances
+      const orderedTx = [...(data.transactions || [])]
+        .sort((a, b) => new Date(a.date) - new Date(b.date) || (a.id - b.id));
+      setTransactions(orderedTx);
+      setPayouts(data.payouts || []);
       setError(null);
     } catch (err) {
       setError('Failed to load balance data. Please try again later.');
-      console.error('Error fetching transactions:', err);
+      console.error('Error fetching summary:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchPayouts = async () => {
-    try {
-      const response = await authFetch(API_ENDPOINTS.PAYOUTS);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch payouts');
-      }
-      
-      const data = await response.json();
-      setPayouts(data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching payouts:', err);
     }
   };
 
@@ -124,7 +107,7 @@ const Balance = () => {
               </svg>
             </div>
             <h2>Current Balance</h2>
-            <button onClick={() => { fetchTransactions(); fetchPayouts(); }} className="refresh-btn">
+            <button onClick={() => { fetchSummary(); }} className="refresh-btn">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
               </svg>

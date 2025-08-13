@@ -4,6 +4,7 @@ export const API_ENDPOINTS = {
   TRANSACTIONS: `${API_BASE_URL}/api/transactions`,
   HEALTH: `${API_BASE_URL}/health`,
   PAYOUTS: `${API_BASE_URL}/api/payouts`,
+  SUMMARY: `${API_BASE_URL}/api/summary`,
 };
 
 export default API_BASE_URL;

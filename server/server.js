@@ -4,8 +4,8 @@ import dotenv from 'dotenv'
 import transactionRoutes from './routes/transactionRoutes.js'
 import supabase from './supabase/client.js'
 import authRoutes from './routes/authRoutes.js';
-import { verifyJWT } from './controllers/authController.js';
 import payoutRoutes from './routes/payoutRoutes.js';
+import summaryRoutes from './routes/summaryRoutes.js';
 
 dotenv.config()
 
@@ -68,8 +68,9 @@ async function checkDatabaseConnection() {
 
 app.use('/api/auth', authRoutes);
 
-app.use('/api/transactions', verifyJWT, transactionRoutes);
+app.use('/api/transactions', transactionRoutes);
 app.use('/api/payouts', payoutRoutes);
+app.use('/api/summary', summaryRoutes);
 
 app.get('/health', async (req, res) => {
   const dbStatus = await checkDatabaseConnection()

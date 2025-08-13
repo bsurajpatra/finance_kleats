@@ -1,4 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { API_ENDPOINTS, authFetch } from '../../config/api.js';
 import './Payouts.css';
 import { Bar } from 'react-chartjs-2';
@@ -444,64 +446,45 @@ const Payouts = () => {
 
   const exportToPDF = () => {
     if (filteredAndSortedPayouts.length === 0) return;
-    
-    const headers = [
-      'S.No.',
-      'Date',
-      'Funds Released'
-    ];
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'A4' });
+    const title = 'Payouts Report';
+    const generatedOn = `Generated on: ${new Date().toLocaleString()}`;
+    doc.setFontSize(16);
+    doc.text(title, 40, 40);
+    doc.setFontSize(10);
+    doc.text(generatedOn, 40, 58);
+
+    const headers = [['S.No.', 'Date', 'Funds Released (₹)']];
     const rows = filteredAndSortedPayouts.map((payout, idx) => [
       idx + 1,
       formatDate(payout.date),
-      payout.funds_released
+      Number(payout.funds_released || 0).toLocaleString('en-IN')
     ]);
-    
-    let htmlContent = `
-      <html>
-        <head>
-          <title>Payouts Report</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; font-weight: bold; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #666; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Payouts Report</h1>
-            <p>Generated on: ${new Date().toLocaleString()}</p>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                ${headers.map(header => `<th>${header}</th>`).join('')}
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
-            </tbody>
-          </table>
-          <div class="footer">
-            <p>Total Payouts: ${filteredAndSortedPayouts.length}</p>
-          </div>
-        </body>
-      </html>
-    `;
-    
-    // Create a new window with the HTML content
-    const newWindow = window.open('', '_blank');
-    newWindow.document.write(htmlContent);
-    newWindow.document.close();
-    
-    // Wait for content to load then print
-    newWindow.onload = function() {
-      newWindow.print();
-      newWindow.close();
-    };
-    
+
+    doc.autoTable({
+      head: headers,
+      body: rows,
+      startY: 80,
+      styles: { fontSize: 9, cellPadding: 6 },
+      headStyles: { fillColor: [242, 242, 242], textColor: 20 },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
+      columnStyles: {
+        0: { cellWidth: 60 },
+        1: { cellWidth: 160 },
+        2: { cellWidth: 180, halign: 'right' }
+      },
+      didDrawPage: (data) => {
+        const pageCount = doc.getNumberOfPages();
+        const pageSize = doc.internal.pageSize;
+        const footerY = pageSize.height - 20;
+        doc.setFontSize(9);
+        doc.text(`Total Payouts: ${filteredAndSortedPayouts.length}`, 40, footerY);
+        doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageSize.width - 120, footerY);
+      },
+      margin: { left: 40, right: 40 },
+    });
+
+    doc.save('payouts.pdf');
     setShowExportDropdown(false);
   };
 
@@ -750,13 +733,32 @@ const Payouts = () => {
                   {showExportDropdown && (
                     <div className="payouts-export-dropdown">
                       <button onClick={exportToCSV} className="export-option">
-                        <span>📄</span> Export as CSV
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 8 }}>
+                          <path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#0EA5E9"/>
+                          <path d="M13 2v5h5" fill="#0EA5E9"/>
+                          <rect x="7" y="11" width="10" height="1.5" fill="#E0F2FE"/>
+                          <rect x="7" y="14" width="10" height="1.5" fill="#E0F2FE"/>
+                          <rect x="7" y="17" width="6" height="1.5" fill="#E0F2FE"/>
+                        </svg>
+                        Export as CSV
                       </button>
                       <button onClick={exportToTXT} className="export-option">
-                        <span>📝</span> Export as TXT
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 8 }}>
+                          <path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#6B7280"/>
+                          <path d="M13 2v5h5" fill="#6B7280"/>
+                          <rect x="7" y="11" width="10" height="1.5" fill="#F3F4F6"/>
+                          <rect x="7" y="14" width="10" height="1.5" fill="#F3F4F6"/>
+                          <rect x="7" y="17" width="6" height="1.5" fill="#F3F4F6"/>
+                        </svg>
+                        Export as TXT
                       </button>
                       <button onClick={exportToPDF} className="export-option">
-                        <span>📄</span> Export as PDF
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 8 }}>
+                          <path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#EF4444"/>
+                          <path d="M13 2v5h5" fill="#EF4444"/>
+                          <text x="8" y="16" fontSize="7" fill="#FFF" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold">PDF</text>
+                        </svg>
+                        Export as PDF
                       </button>
                     </div>
                   )}

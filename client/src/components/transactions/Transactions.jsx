@@ -1,6 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import './Transactions.css';
 import { API_ENDPOINTS, authFetch } from '../../config/api.js';
+
+const CsvIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 8 }}>
+    <path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#0EA5E9"/>
+    <path d="M13 2v5h5" fill="#0EA5E9"/>
+    <rect x="7" y="11" width="10" height="1.5" fill="#E0F2FE"/>
+    <rect x="7" y="14" width="10" height="1.5" fill="#E0F2FE"/>
+    <rect x="7" y="17" width="6" height="1.5" fill="#E0F2FE"/>
+  </svg>
+);
+
+const TxtIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 8 }}>
+    <path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#6B7280"/>
+    <path d="M13 2v5h5" fill="#6B7280"/>
+    <rect x="7" y="11" width="10" height="1.5" fill="#F3F4F6"/>
+    <rect x="7" y="14" width="10" height="1.5" fill="#F3F4F6"/>
+    <rect x="7" y="17" width="6" height="1.5" fill="#F3F4F6"/>
+  </svg>
+);
+
+const PdfIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginRight: 8 }}>
+    <path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" fill="#EF4444"/>
+    <path d="M13 2v5h5" fill="#EF4444"/>
+    <text x="8" y="16" fontSize="7" fill="#FFF" fontFamily="Arial, Helvetica, sans-serif" fontWeight="bold">PDF</text>
+  </svg>
+);
 
 const Transactions = () => {
   const [transactions, setTransactions] = useState([]);
@@ -461,75 +491,65 @@ const Transactions = () => {
 
   const exportToPDF = () => {
     if (filteredTransactions.length === 0) return;
-    
-    // Create a simple HTML table for PDF conversion
-    const headers = [
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'A4' });
+    const title = 'Transactions Report';
+    const generatedOn = `Generated on: ${new Date().toLocaleString()}`;
+    doc.setFontSize(16);
+    doc.text(title, 40, 40);
+    doc.setFontSize(10);
+    doc.text(generatedOn, 40, 58);
+
+    const headers = [[
       'S.No.',
       'Date',
       'Description',
-      'Credit',
-      'Debit',
-      'Previous Balance',
-      'Remaining Balance',
+      'Credit (₹)',
+      'Debit (₹)',
+      'Previous Balance (₹)',
+      'Remaining Balance (₹)',
       'Notes'
-    ];
+    ]];
     const rows = filteredTransactions.map((tx, idx) => [
       idx + 1,
       formatDate(tx.date),
       tx.description || 'N/A',
-      tx.credit > 0 ? tx.credit : '',
-      tx.debit > 0 ? tx.debit : '',
-      tx.previous_balance,
-      tx.remaining_balance,
+      tx.credit > 0 ? Number(tx.credit).toLocaleString('en-IN') : '',
+      tx.debit > 0 ? Number(tx.debit).toLocaleString('en-IN') : '',
+      Number(tx.previous_balance || 0).toLocaleString('en-IN'),
+      Number(tx.remaining_balance || 0).toLocaleString('en-IN'),
       tx.notes || ''
     ]);
-    
-    let htmlContent = `
-      <html>
-        <head>
-          <title>Transactions Report</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; font-weight: bold; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .footer { margin-top: 20px; text-align: center; font-size: 12px; color: #666; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>Transactions Report</h1>
-            <p>Generated on: ${new Date().toLocaleString()}</p>
-          </div>
-          <table>
-            <thead>
-              <tr>
-                ${headers.map(header => `<th>${header}</th>`).join('')}
-              </tr>
-            </thead>
-            <tbody>
-              ${rows.map(row => `<tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>`).join('')}
-            </tbody>
-          </table>
-          <div class="footer">
-            <p>Total Transactions: ${filteredTransactions.length}</p>
-          </div>
-        </body>
-      </html>
-    `;
-    
-    // Create a new window with the HTML content
-    const newWindow = window.open('', '_blank');
-    newWindow.document.write(htmlContent);
-    newWindow.document.close();
-    
-    // Wait for content to load then print
-    newWindow.onload = function() {
-      newWindow.print();
-      newWindow.close();
-    };
-    
+
+    doc.autoTable({
+      head: headers,
+      body: rows,
+      startY: 80,
+      styles: { fontSize: 9, cellPadding: 6 },
+      headStyles: { fillColor: [242, 242, 242], textColor: 20 },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
+      columnStyles: {
+        0: { cellWidth: 50 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 200 },
+        3: { cellWidth: 90, halign: 'right' },
+        4: { cellWidth: 90, halign: 'right' },
+        5: { cellWidth: 140, halign: 'right' },
+        6: { cellWidth: 160, halign: 'right' },
+        7: { cellWidth: 160 },
+      },
+      didDrawPage: (data) => {
+        // Footer
+        const pageCount = doc.getNumberOfPages();
+        const pageSize = doc.internal.pageSize;
+        const footerY = pageSize.height - 20;
+        doc.setFontSize(9);
+        doc.text(`Total Transactions: ${filteredTransactions.length}`, 40, footerY);
+        doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageSize.width - 120, footerY);
+      },
+      margin: { left: 40, right: 40 },
+    });
+
+    doc.save('transactions.pdf');
     setShowExportDropdown(false);
   };
 
@@ -745,19 +765,19 @@ const Transactions = () => {
             >
               Export ▼
             </button>
-            {showExportDropdown && (
-              <div className="transactions-export-dropdown">
-                <button onClick={exportToCSV} className="export-option">
-                  <span>📄</span> Export as CSV
-                </button>
-                <button onClick={exportToTXT} className="export-option">
-                  <span>📝</span> Export as TXT
-                </button>
-                <button onClick={exportToPDF} className="export-option">
-                  <span>📄</span> Export as PDF
-                </button>
-              </div>
-            )}
+              {showExportDropdown && (
+               <div className="transactions-export-dropdown">
+                 <button onClick={exportToCSV} className="export-option">
+                   <CsvIcon /> Export as CSV
+                 </button>
+                 <button onClick={exportToTXT} className="export-option">
+                   <TxtIcon /> Export as TXT
+                 </button>
+                 <button onClick={exportToPDF} className="export-option">
+                   <PdfIcon /> Export as PDF
+                 </button>
+               </div>
+             )}
           </div>
         </div>
       </div>
