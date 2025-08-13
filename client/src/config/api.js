@@ -8,13 +8,24 @@ export const API_ENDPOINTS = {
 
 export default API_BASE_URL;
 
-export function authFetch(url, options = {}) {
+export async function authFetch(url, options = {}) {
   const token = localStorage.getItem('token');
-  return fetch(url, {
+  const response = await fetch(url, {
     ...options,
     headers: {
       ...(options.headers || {}),
       'Authorization': `Bearer ${token}`,
     },
   });
-} 
+
+  if (response.status === 401 || response.status === 403) {
+    try {
+      localStorage.removeItem('token');
+      window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { status: response.status } }));
+    } catch (_) {
+      // noop
+    }
+  }
+
+  return response;
+}

@@ -73,7 +73,9 @@ const Balance = () => {
   };
 
   const getRecentPayouts = () => {
-    return payouts.slice(-5).reverse();
+    return [...payouts]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
   };
 
   if (loading) {

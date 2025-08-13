@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Signin from './components/signin/Signin';
 import Dashboard from './components/dashboard/Dashboard';
@@ -35,6 +35,14 @@ function App() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
   };
+
+  useEffect(() => {
+    function onUnauthorized(e) {
+      setIsAuthenticated(false);
+    }
+    window.addEventListener('auth:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', onUnauthorized);
+  }, []);
 
   return (
     <Router>

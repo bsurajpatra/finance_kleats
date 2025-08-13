@@ -4,7 +4,7 @@ import logo from '../../assets/logo.png';
 import Transactions from '../transactions/Transactions';
 import Balance from '../balance/Balance';
 import Payouts from '../payouts/Payouts';
-import CanteenManagement from '../canteen/CanteenManagement';
+import CanteenPaymentManagement from '../canteen/CanteenPaymentManagement';
 
 const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
   return (
@@ -62,7 +62,7 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
         )}
 
         {activeTab === 'canteen' && (
-          <CanteenManagement />
+          <CanteenPaymentManagement />
         )}
       </main>
       

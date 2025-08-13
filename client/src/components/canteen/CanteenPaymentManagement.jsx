@@ -1,11 +1,11 @@
 import React from 'react';
-import './CanteenManagement.css';
+import './CanteenPaymentManagement.css';
 
-const CanteenManagement = () => {
+const CanteenPaymentManagement = () => {
   return (
     <div className="canteen-container">
       <div className="canteen-header">
-        <h2>Canteen PaymentManagement</h2>
+        <h2>Canteen Payment Management</h2>
       </div>
       
       <div className="canteen-placeholder">
@@ -15,4 +15,4 @@ const CanteenManagement = () => {
   );
 };
 
-export default CanteenManagement; 
+export default CanteenPaymentManagement; 
