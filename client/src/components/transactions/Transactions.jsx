@@ -64,6 +64,9 @@ const Transactions = () => {
 
 
   const filterRef = useRef(null);
+  const [descPopup, setDescPopup] = useState({ open: false, text: '', title: '' });
+  const longPressTimerRef = useRef(null);
+  const touchStartPosRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     fetchTransactions();
@@ -91,6 +94,62 @@ const Transactions = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showFilter]);
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
+
+  const isMobileViewport = () => window.matchMedia('(max-width: 768px)').matches;
+
+  const openDescriptionPopup = (text, title = 'Description') => {
+    setDescPopup({ open: true, text: text || 'N/A', title });
+  };
+
+  const closeDescriptionPopup = () => {
+    setDescPopup({ open: false, text: '' });
+  };
+
+  const handleDescriptionTouchStart = (text, e, title = 'Description') => {
+    if (!isMobileViewport()) return;
+    if (e.touches && e.touches.length > 0) {
+      const t = e.touches[0];
+      touchStartPosRef.current = { x: t.clientX, y: t.clientY };
+    }
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    openDescriptionPopup(text, title);
+  };
+
+  const handleDescriptionTouchMove = (e) => {
+    if (!isMobileViewport()) return;
+    if (!e.touches || e.touches.length === 0) return;
+    const t = e.touches[0];
+    const dx = Math.abs(t.clientX - touchStartPosRef.current.x);
+    const dy = Math.abs(t.clientY - touchStartPosRef.current.y);
+    const MOVE_THRESHOLD_PX = 10;
+    if (dx > MOVE_THRESHOLD_PX || dy > MOVE_THRESHOLD_PX) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      closeDescriptionPopup();
+    }
+  };
+
+  const handleDescriptionTouchEnd = () => {
+    if (!isMobileViewport()) return;
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    closeDescriptionPopup();
+  };
 
   const fetchTransactions = async () => {
     try {
@@ -981,6 +1040,10 @@ const Transactions = () => {
                       <td 
                         className="editable-cell description"
                         onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'description', transaction.description || '')}
+                        onTouchStart={(e) => handleDescriptionTouchStart(transaction.description || 'N/A', e, 'Description')}
+                        onTouchMove={handleDescriptionTouchMove}
+                        onTouchEnd={handleDescriptionTouchEnd}
+                        onContextMenu={(e) => e.preventDefault()}
                       >
                         {isEditing && editingCell?.field === 'description' ? (
                           <input
@@ -1048,6 +1111,10 @@ const Transactions = () => {
                       <td 
                         className="editable-cell notes"
                         onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'notes', transaction.notes || '')}
+                        onTouchStart={(e) => handleDescriptionTouchStart(transaction.notes || 'N/A', e, 'Notes')}
+                        onTouchMove={handleDescriptionTouchMove}
+                        onTouchEnd={handleDescriptionTouchEnd}
+                        onContextMenu={(e) => e.preventDefault()}
                       >
                         {isEditing && editingCell?.field === 'notes' ? (
                           <input
@@ -1137,6 +1204,18 @@ const Transactions = () => {
       <div className="transactions-summary">
         <p>Total Transactions: {filteredTransactions.length}</p>
       </div>
+
+      {descPopup.open && (
+        <div className="desc-popup-backdrop" onClick={closeDescriptionPopup}>
+          <div className="desc-popup" onClick={(e) => e.stopPropagation()}>
+            <div className="desc-popup-header">
+              <h4>{descPopup.title || 'Description'}</h4>
+              <button className="desc-popup-close" onClick={closeDescriptionPopup} aria-label="Close description">×</button>
+            </div>
+            <div className="desc-popup-content">{descPopup.text}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

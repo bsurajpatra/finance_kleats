@@ -204,6 +204,69 @@
   text-align: left;
 }
 
+/* Description long-press popup */
+.desc-popup-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+}
+
+.desc-popup {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  width: min(92vw, 520px);
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.desc-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.desc-popup-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.desc-popup-close {
+  background: #e2e8f0;
+  border: none;
+  color: #333;
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.desc-popup-close:hover {
+  background: #cbd5e1;
+}
+
+.desc-popup-content {
+  padding: 1rem;
+  font-size: 0.95rem;
+  color: #222;
+  line-height: 1.5;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .transactions-summary {
   margin-top: 2rem;
   padding-top: 1rem;
