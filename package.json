@@ -3,7 +3,9 @@
     "concurrently": "^9.2.0"
   },
   "scripts": {
-  "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\""
-}
+    "dev": "concurrently \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
+    "install:all": "concurrently \"npm install --prefix client\" \"npm install --prefix server\"",
+    "postinstall": "npm run install:all"
+  }
 
 }
