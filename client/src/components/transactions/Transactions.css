@@ -233,15 +233,6 @@
     padding: 0.75rem 0.5rem;
     font-size: 0.85rem;
   }
-  
-  .transactions-table th:nth-child(6),
-  .transactions-table td:nth-child(6),
-  .transactions-table th:nth-child(7),
-  .transactions-table td:nth-child(7),
-  .transactions-table th:nth-child(8),
-  .transactions-table td:nth-child(8) {
-    display: none;
-  }
 } 
 
 .transactions-filters {
@@ -1124,15 +1115,6 @@
   .transactions-table td {
     padding: 0.6rem 0.4rem;
     font-size: 0.8rem;
-  }
-  
-  .transactions-table th:nth-child(6),
-  .transactions-table td:nth-child(6),
-  .transactions-table th:nth-child(7),
-  .transactions-table td:nth-child(7),
-  .transactions-table th:nth-child(8),
-  .transactions-table td:nth-child(8) {
-    display: none;
   }
   
   .transactions-table {
