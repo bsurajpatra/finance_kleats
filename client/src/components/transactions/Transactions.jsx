@@ -123,7 +123,10 @@ const Transactions = () => {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    openDescriptionPopup(text, title);
+    longPressTimerRef.current = setTimeout(() => {
+      openDescriptionPopup(text, title);
+      longPressTimerRef.current = null;
+    }, 2000);
   };
 
   const handleDescriptionTouchMove = (e) => {
@@ -138,7 +141,9 @@ const Transactions = () => {
         clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = null;
       }
-      closeDescriptionPopup();
+      if (descPopup.open) {
+        closeDescriptionPopup();
+      }
     }
   };
 
@@ -148,7 +153,7 @@ const Transactions = () => {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    closeDescriptionPopup();
+    // Do not auto-close on touch end; user can tap outside to close
   };
 
   const fetchTransactions = async () => {
