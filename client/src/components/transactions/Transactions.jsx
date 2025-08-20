@@ -1210,7 +1210,6 @@ const Transactions = () => {
           <div className="desc-popup" onClick={(e) => e.stopPropagation()}>
             <div className="desc-popup-header">
               <h4>{descPopup.title || 'Description'}</h4>
-              <button className="desc-popup-close" onClick={closeDescriptionPopup} aria-label="Close description">×</button>
             </div>
             <div className="desc-popup-content">{descPopup.text}</div>
           </div>
