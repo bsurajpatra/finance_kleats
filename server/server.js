@@ -6,6 +6,7 @@ import { pool } from './db/mysql.js'
 import authRoutes from './routes/authRoutes.js';
 import payoutRoutes from './routes/payoutRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
+import canteenRoutes from './routes/canteenRoutes.js';
 
 dotenv.config()
 
@@ -62,6 +63,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/payouts', payoutRoutes);
 app.use('/api/summary', summaryRoutes);
+app.use('/api/canteens', canteenRoutes);
 
 app.get('/health', async (req, res) => {
   const dbStatus = await checkDatabaseConnection()

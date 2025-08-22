@@ -1,16 +1,180 @@
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './CanteenPaymentManagement.css';
+import { API_ENDPOINTS, authFetch } from '../../config/api.js';
 
-const CanteenPaymentManagement = () => {
+const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, onExitSettlements }) => {
+  const [canteens, setCanteens] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await authFetch(API_ENDPOINTS.CANTEENS);
+        if (!res.ok) throw new Error('Failed to fetch canteens');
+        const data = await res.json();
+        setCanteens(Array.isArray(data) ? data : []);
+        setError(null);
+      } catch (err) {
+        setError('Failed to load canteens');
+        console.error('Canteens fetch error:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const imagesMap = useMemo(() => {
+    const modules = import.meta.glob('../../assets/*', { eager: true, as: 'url' });
+    const map = new Map();
+    Object.keys(modules).forEach((key) => {
+      const file = key.split('/').pop() || '';
+      const base = file.replace(/\.[^.]+$/, '');
+      map.set(base.toLowerCase().replace(/[^a-z0-9]/g, ''), modules[key]);
+    });
+    return map;
+  }, []);
+
+  const getCanteenImage = (canteen) => {
+    if (!canteen) return null;
+    // Direct id-based overrides
+    if (String(canteen.CanteenId) === '2') {
+      try {
+        return new URL('../../assets/naturals.jpeg', import.meta.url).toString();
+      } catch (_) {
+        // fall through to name-based resolution
+      }
+    }
+    // Name-based resolution
+    const normalized = String(canteen.CanteenName || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+    return imagesMap.get(normalized) || null;
+  };
+
+  const toPascalCase = (value) => {
+    if (!value) return '';
+    return String(value)
+      .toLowerCase()
+      .split(/\s+/)
+      .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  };
+
+  const [activeCanteen, setActiveCanteen] = useState(null);
+  const [settlements, setSettlements] = useState([]);
+  const [settleLoading, setSettleLoading] = useState(false);
+  const [settleError, setSettleError] = useState(null);
+
+  const openSettlements = async (canteen) => {
+    try {
+      setActiveCanteen(canteen);
+      setSettleLoading(true);
+      setSettlements([]);
+      setSettleError(null);
+      onNavVisibilityChange && onNavVisibilityChange(true);
+      onEnterSettlements && onEnterSettlements({
+        title: `${toPascalCase(canteen.CanteenName)} - Settlements`,
+        onBack: () => closeSettlements()
+      });
+      const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENTS(canteen.CanteenId));
+      if (!res.ok) throw new Error('Failed to fetch settlements');
+      const data = await res.json();
+      setSettlements(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setSettleError('Failed to load settlements');
+      console.error('Settlements fetch error:', err);
+    } finally {
+      setSettleLoading(false);
+    }
+  };
+
+  const closeSettlements = () => {
+    setActiveCanteen(null);
+    setSettlements([]);
+    setSettleError(null);
+    onNavVisibilityChange && onNavVisibilityChange(false);
+    onExitSettlements && onExitSettlements();
+  };
+
   return (
     <div className="canteen-container">
-      <div className="canteen-header">
-        <h2>Canteen Payment Management</h2>
-      </div>
+      {!activeCanteen && (
+        <div className="canteen-header">
+          <h2>Canteen Payment Management</h2>
+        </div>
+      )}
+
+      {activeCanteen ? (
+        <div className="settle-page">
+          <div className="settle-page-content">
+            {settleLoading ? (
+              <div className="settle-loading">Loading...</div>
+            ) : settleError ? (
+              <div className="settle-error">{settleError}</div>
+            ) : settlements.length === 0 ? (
+              <div className="settle-empty">No confirmed orders found.</div>
+            ) : (
+              <div className="settle-table">
+                <div className="settle-row settle-head">
+                  <div>Date</div>
+                  <div>Orders</div>
+                  <div>Total Revenue</div>
+                </div>
+                {settlements.map(r => (
+                  <div key={r.order_date} className="settle-row">
+                    <div>{new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                    <div>{r.orders_count}</div>
+                    <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        loading ? (
+          <div className="canteen-placeholder">
+            <p>Loading canteens...</p>
+          </div>
+        ) : error ? (
+          <div className="canteen-placeholder">
+            <p>{error}</p>
+          </div>
+        ) : canteens.length === 0 ? (
+          <div className="canteen-placeholder">
+            <p>No canteens found.</p>
+          </div>
+        ) : (
+          <div className="canteen-grid">
+            {canteens.map(c => {
+              const imgSrc = getCanteenImage(c);
+              return (
+              <div key={c.CanteenId} className="canteen-card">
+                <div className="canteen-media">
+                  {imgSrc ? (
+                    <img src={imgSrc} alt={c.CanteenName} className="canteen-banner" />
+                  ) : (
+                    <div className="canteen-banner placeholder-banner">{(c.CanteenName || 'C')[0]}</div>
+                  )}
+                </div>
+                <div className="canteen-footer">
+                  <div className="canteen-info">
+                    <div className="canteen-name">{toPascalCase(c.CanteenName)}</div>
+                    <div className="canteen-location">{toPascalCase(c.Location) || '—'}</div>
+                  </div>
+                  <div className="canteen-actions">
+                    <button className="btn-primary" onClick={() => openSettlements(c)}>Settle Payments</button>
+                  </div>
+                </div>
+              </div>
+            )})}
+          </div>
+        )
+      )}
+
       
-      <div className="canteen-placeholder">
-        <p>Finance management related work of canteens will be done here</p>
-      </div>
     </div>
   );
 };

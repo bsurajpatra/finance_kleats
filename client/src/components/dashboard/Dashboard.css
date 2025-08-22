@@ -17,6 +17,32 @@
   box-shadow: 0 2px 8px rgba(44, 44, 44, 0.04);
   flex-shrink: 0;
 }
+.settlements-bar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+}
+
+.settlements-back {
+  background: #f44336;
+  color: #fff;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.settlements-title {
+  text-align: center;
+  margin: 0;
+  font-size: 1.3rem;
+  color: #222;
+  font-weight: 700;
+}
+
+.settlements-spacer { height: 1px; }
 
 .header-left {
   display: flex;

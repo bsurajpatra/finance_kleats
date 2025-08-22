@@ -5,6 +5,8 @@ export const API_ENDPOINTS = {
   HEALTH: `${API_BASE_URL}/health`,
   PAYOUTS: `${API_BASE_URL}/api/payouts`,
   SUMMARY: `${API_BASE_URL}/api/summary`,
+  CANTEENS: `${API_BASE_URL}/api/canteens`,
+  CANTEEN_SETTLEMENTS: (id) => `${API_BASE_URL}/api/canteens/${id}/settlements`,
 };
 
 export default API_BASE_URL;
