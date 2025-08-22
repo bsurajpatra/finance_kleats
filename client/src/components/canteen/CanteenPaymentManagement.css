@@ -166,64 +166,23 @@
 .settle-table {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 
 .settle-row {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr 1fr;
-  gap: 12px;
-  padding: 14px 16px;
+  gap: 8px;
+  padding: 10px 12px;
   border: 1px solid #f0f0f0;
-  border-radius: 12px;
+  border-radius: 8px;
   background: #fff;
-  box-shadow: 0 2px 8px rgba(44,44,44,0.06);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .settle-head {
   background: #fafafa;
   border: 1px solid #f0f0f0;
   font-weight: 700;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.settle-row:not(.settle-head):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(44,44,44,0.10);
-  border-color: #eaeaea;
-}
-
-.settle-row:nth-child(odd):not(.settle-head) {
-  background: #fdfdfd;
-}
-
-.settle-row > div:nth-child(2) {
-  justify-self: start;
-  font-weight: 700;
-  color: #e03131;
-  background: #fff0f0;
-  padding: 4px 10px;
-  border-radius: 999px;
-  display: inline-block;
-}
-
-.settle-row > div:last-child {
-  justify-self: end;
-  font-weight: 800;
-  color: #222;
-}
-
-@media (max-width: 640px) {
-  .settle-row {
-    grid-template-columns: 1fr;
-    gap: 6px;
-  }
-  .settle-row > div:last-child {
-    justify-self: start;
-  }
 }
 
 .settle-modal-actions { display: none; }
