@@ -78,6 +78,10 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
         title: `${toPascalCase(canteen.CanteenName)} - Settlements`,
         onBack: () => closeSettlements()
       });
+      const sp = new URLSearchParams(window.location.search);
+      sp.set('view', 'settlements');
+      sp.set('canteenId', String(canteen.CanteenId));
+      window.history.replaceState(null, '', `${window.location.pathname}?${sp.toString()}`);
       const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENTS(canteen.CanteenId));
       if (!res.ok) throw new Error('Failed to fetch settlements');
       const data = await res.json();
@@ -96,7 +100,25 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
     setSettleError(null);
     onNavVisibilityChange && onNavVisibilityChange(false);
     onExitSettlements && onExitSettlements();
+    const sp = new URLSearchParams(window.location.search);
+    sp.delete('view');
+    sp.delete('canteenId');
+    window.history.replaceState(null, '', `${window.location.pathname}?${sp.toString()}`);
   };
+
+  // Auto-open settlements if query present
+  useEffect(() => {
+    const sp = new URLSearchParams(window.location.search);
+    const view = sp.get('view');
+    const cid = sp.get('canteenId');
+    if (view === 'settlements' && cid && canteens.length > 0 && !activeCanteen) {
+      const found = canteens.find(c => String(c.CanteenId) === String(cid));
+      if (found) {
+        openSettlements(found);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canteens]);
 
   return (
     <div className="canteen-container">

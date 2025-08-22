@@ -6,7 +6,9 @@ import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
-  const [activeTab, setActiveTab] = useState('balance');
+  const params = new URLSearchParams(window.location.search);
+  const initialTab = params.get('tab') || 'balance';
+  const [activeTab, setActiveTab] = useState(initialTab);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -34,6 +36,9 @@ function App() {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
+    const sp = new URLSearchParams(window.location.search);
+    sp.set('tab', tab);
+    window.history.replaceState(null, '', `${window.location.pathname}?${sp.toString()}`);
   };
 
   useEffect(() => {
@@ -42,6 +47,16 @@ function App() {
     }
     window.addEventListener('auth:unauthorized', onUnauthorized);
     return () => window.removeEventListener('auth:unauthorized', onUnauthorized);
+  }, []);
+
+  useEffect(() => {
+    // Sync initial tab from URL on mount
+    const sp = new URLSearchParams(window.location.search);
+    const tab = sp.get('tab');
+    if (tab && tab !== activeTab) {
+      setActiveTab(tab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
