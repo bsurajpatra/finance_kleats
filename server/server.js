@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import transactionRoutes from './routes/transactionRoutes.js'
-import supabase from './supabase/client.js'
+import { pool } from './db/mysql.js'
 import authRoutes from './routes/authRoutes.js';
 import payoutRoutes from './routes/payoutRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
@@ -48,16 +48,7 @@ app.use((req, res, next) => {
 
 async function checkDatabaseConnection() {
   try {
-    const { data, error } = await supabase
-      .from('finance_transactions')
-      .select('count')
-      .limit(1)
-    
-    if (error) {
-      console.log('❌ Database connection failed:', error.message)
-      return false
-    }
-    
+    await pool.query('SELECT 1')
     console.log('✅ Database connection successful')
     return true
   } catch (err) {

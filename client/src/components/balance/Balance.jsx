@@ -77,7 +77,7 @@ const Balance = () => {
       <div className="balance-container">
         <div className="error-message">
           <p>{error}</p>
-          <button onClick={fetchTransactions} className="retry-btn">
+          <button onClick={fetchSummary} className="retry-btn">
             Retry
           </button>
         </div>
