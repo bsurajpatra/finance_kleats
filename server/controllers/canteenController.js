@@ -1,5 +1,6 @@
 import { getAllCanteens } from '../models/canteenModel.js'
 import { getDailyRevenueByCanteen } from '../models/ordersModel.js'
+import { upsertPayoutRecord, getPayoutsMapByCanteen, setPayoutStatus } from '../models/payoutsModel.js'
 
 export async function fetchCanteens(req, res) {
   try {
@@ -16,10 +17,71 @@ export async function fetchCanteenSettlements(req, res) {
     const { id } = req.params
     if (!id) return res.status(400).json({ error: 'CanteenId is required' })
     const rows = await getDailyRevenueByCanteen(id)
-    res.json(rows)
+    // upsert payout amounts and merge paid status, but don't fail if payouts table absent
+    let payoutMap = new Map()
+    try {
+      payoutMap = await getPayoutsMapByCanteen(id)
+    } catch (_) {
+      payoutMap = new Map()
+    }
+    const enriched = []
+    for (const r of rows) {
+      const orderDate = new Date(r.order_date)
+      const ymd = orderDate.toISOString().slice(0,10)
+      const amountInt = Number(r.net_payout || 0)
+      try {
+        await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
+      } catch (_) {}
+      const existing = payoutMap.get(ymd)
+      enriched.push({
+        ...r,
+        payout_amount: amountInt,
+        status: existing?.status || 'unsettled',
+        settled_at: existing?.settled_at || null
+      })
+    }
+    res.json(enriched)
   } catch (err) {
     console.error('Error fetching canteen settlements:', err)
     res.status(500).json({ error: 'Failed to fetch settlements', details: err.message })
+  }
+}
+
+export async function setPayoutPaid(req, res) {
+  try {
+    const { id } = req.params
+    const { date, status } = req.body || {}
+    if (!id) return res.status(400).json({ error: 'CanteenId is required' })
+    if (!date) return res.status(400).json({ error: 'date is required (YYYY-MM-DD)' })
+    try {
+      const normalized = status === 'settled' ? 'settled' : 'unsettled'
+      await setPayoutStatus({ canteenId: Number(id), payoutDate: date, status: normalized })
+    } catch (err) {
+      return res.status(400).json({ error: 'payouts table missing or schema mismatch', details: err.message })
+    }
+    res.json({ success: true })
+  } catch (err) {
+    console.error('Error marking payout paid:', err)
+    res.status(500).json({ error: 'Failed to update payout status', details: err.message })
+  }
+}
+
+export async function syncCanteenPayouts(req, res) {
+  try {
+    const { id } = req.params
+    if (!id) return res.status(400).json({ error: 'CanteenId is required' })
+    const rows = await getDailyRevenueByCanteen(id)
+    for (const r of rows) {
+      const ymd = new Date(r.order_date).toISOString().slice(0,10)
+      const amountInt = Number(r.net_payout || 0)
+      try {
+        await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
+      } catch (_) { /* ignore if payouts table missing */ }
+    }
+    res.json({ success: true, count: rows.length })
+  } catch (err) {
+    console.error('Error syncing canteen payouts:', err)
+    res.status(500).json({ error: 'Failed to sync payouts', details: err.message })
   }
 }
 

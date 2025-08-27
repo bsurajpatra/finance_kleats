@@ -7,6 +7,7 @@ export const API_ENDPOINTS = {
   SUMMARY: `${API_BASE_URL}/api/summary`,
   CANTEENS: `${API_BASE_URL}/api/canteens`,
   CANTEEN_SETTLEMENTS: (id) => `${API_BASE_URL}/api/canteens/${id}/settlements`,
+  CANTEEN_SETTLEMENT_PAID: (id) => `${API_BASE_URL}/api/canteens/${id}/settlements/paid`,
 };
 
 export default API_BASE_URL;

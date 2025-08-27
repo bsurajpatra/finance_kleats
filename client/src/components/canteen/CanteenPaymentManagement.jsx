@@ -143,12 +143,38 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                   <div>Date</div>
                   <div>Orders</div>
                   <div>Total Revenue</div>
+                  <div>Net Payout</div>
+                  <div>Payment Status</div>
                 </div>
                 {settlements.map(r => (
                   <div key={r.order_date} className="settle-row">
                     <div>{new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                     <div>{r.orders_count}</div>
                     <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                    <div>
+                      <button
+                        className={`btn-primary`}
+                        onClick={async () => {
+                          try {
+                            const dateIso = new Date(r.order_date).toISOString().slice(0,10)
+                            const nextStatus = (r.status === 'settled') ? 'unsettled' : 'settled'
+                            const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENT_PAID(activeCanteen.CanteenId), {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ date: dateIso, status: nextStatus })
+                            })
+                            if (!res.ok) throw new Error('Failed to update status')
+                            setSettlements(prev => prev.map(row => (
+                              row.order_date === r.order_date ? { ...row, status: nextStatus } : row
+                            )))
+                          } catch (err) {
+                            console.error('Update payout status error:', err)
+                            alert('Failed to update payout status')
+                          }
+                        }}
+                      >{r.status === 'settled' ? 'Settled' : 'Unsettled'}</button>
+                    </div>
                   </div>
                 ))}
               </div>
