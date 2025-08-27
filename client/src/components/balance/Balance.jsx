@@ -4,7 +4,6 @@ import { API_ENDPOINTS, authFetch } from '../../config/api.js';
 
 const Balance = () => {
   const [transactions, setTransactions] = useState([]);
-  const [payouts, setPayouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -22,7 +21,6 @@ const Balance = () => {
       const orderedTx = [...(data.transactions || [])]
         .sort((a, b) => new Date(a.date) - new Date(b.date) || (a.id - b.id));
       setTransactions(orderedTx);
-      setPayouts(data.payouts || []);
       setError(null);
     } catch (err) {
       setError('Failed to load balance data. Please try again later.');
@@ -55,11 +53,7 @@ const Balance = () => {
     return transactions.slice(-5).reverse(); 
   };
 
-  const getRecentPayouts = () => {
-    return [...payouts]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 5);
-  };
+
 
   if (loading) {
     return (
@@ -87,7 +81,6 @@ const Balance = () => {
 
   const currentBalance = getCurrentBalance();
   const recentTransactions = getRecentTransactions();
-  const recentPayouts = getRecentPayouts();
 
   return (
     <div className="balance-container">
@@ -188,51 +181,7 @@ const Balance = () => {
         )}
       </div>
 
-      <div className="recent-payouts">
-        <div className="payouts-header-left">
-          <h3>
-            <svg viewBox="0 0 24 24" fill="currentColor" className="header-icon">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-            Recent Payouts
-          </h3>
-        </div>
-        
-        {recentPayouts.length === 0 ? (
-          <div className="no-payouts">
-            <div className="empty-icon">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
-                <path d="M12 6c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
-              </svg>
-            </div>
-                         <p>No recent payments received.</p>
-          </div>
-        ) : (
-          <div className="payouts-list">
-            {recentPayouts.map((payout) => (
-              <div key={payout.id} className="payout-item">
-                                 <div className="payout-icon">
-                   <svg viewBox="0 0 24 24" fill="currentColor">
-                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                   </svg>
-                 </div>
-                 <div className="payout-info">
-                   <div className="payout-description">
-                     Payment Received
-                   </div>
-                   <div className="payout-date">
-                     {formatDate(payout.date)}
-                   </div>
-                 </div>
-                 <div className="payout-amount positive">
-                   +{formatAmount(payout.funds_released)}
-                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      
     </div>
   );
 };

@@ -3,7 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 export const API_ENDPOINTS = {
   TRANSACTIONS: `${API_BASE_URL}/api/transactions`,
   HEALTH: `${API_BASE_URL}/health`,
-  PAYOUTS: `${API_BASE_URL}/api/payouts`,
+
   SUMMARY: `${API_BASE_URL}/api/summary`,
   CANTEENS: `${API_BASE_URL}/api/canteens`,
   CANTEEN_SETTLEMENTS: (id) => `${API_BASE_URL}/api/canteens/${id}/settlements`,

@@ -3,7 +3,6 @@ import './Dashboard.css';
 import logo from '../../assets/logo.png';
 import Transactions from '../transactions/Transactions';
 import Balance from '../balance/Balance';
-import Payouts from '../payouts/Payouts';
 import CanteenPaymentManagement from '../canteen/CanteenPaymentManagement';
 
 const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
@@ -48,12 +47,6 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
           Transactions
         </button>
         <button 
-          className={`nav-tab ${activeTab === 'payouts' ? 'active' : ''}`}
-          onClick={() => onTabChange('payouts')}
-        >
-          Payouts
-        </button>
-        <button 
           className={`nav-tab ${activeTab === 'canteen' ? 'active' : ''}`}
           onClick={() => onTabChange('canteen')}
         >
@@ -69,10 +62,6 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
 
         {activeTab === 'transactions' && (
           <Transactions />
-        )}
-
-        {activeTab === 'payouts' && (
-          <Payouts />
         )}
 
         {activeTab === 'canteen' && (

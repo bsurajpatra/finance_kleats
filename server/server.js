@@ -4,7 +4,6 @@ import dotenv from 'dotenv'
 import transactionRoutes from './routes/transactionRoutes.js'
 import { pool } from './db/mysql.js'
 import authRoutes from './routes/authRoutes.js';
-import payoutRoutes from './routes/payoutRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
 import canteenRoutes from './routes/canteenRoutes.js';
 
@@ -61,7 +60,6 @@ async function checkDatabaseConnection() {
 app.use('/api/auth', authRoutes);
 
 app.use('/api/transactions', transactionRoutes);
-app.use('/api/payouts', payoutRoutes);
 app.use('/api/summary', summaryRoutes);
 app.use('/api/canteens', canteenRoutes);
 
