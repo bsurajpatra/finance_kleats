@@ -138,45 +138,102 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
             ) : settlements.length === 0 ? (
               <div className="settle-empty">No confirmed orders found.</div>
             ) : (
-              <div className="settle-table">
-                <div className="settle-row settle-head">
-                  <div>Date</div>
-                  <div>Orders</div>
-                  <div>Total Revenue</div>
-                  <div>Net Payout</div>
-                  <div>Payment Status</div>
-                </div>
-                {settlements.map(r => (
-                  <div key={r.order_date} className="settle-row">
-                    <div>{new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-                    <div>{r.orders_count}</div>
-                    <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                    <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
-                    <div>
-                      <button
-                        className={`btn-primary`}
-                        onClick={async () => {
-                          try {
-                            const dateIso = new Date(r.order_date).toISOString().slice(0,10)
-                            const nextStatus = (r.status === 'settled') ? 'unsettled' : 'settled'
-                            const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENT_PAID(activeCanteen.CanteenId), {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ date: dateIso, status: nextStatus })
-                            })
-                            if (!res.ok) throw new Error('Failed to update status')
-                            setSettlements(prev => prev.map(row => (
-                              row.order_date === r.order_date ? { ...row, status: nextStatus } : row
-                            )))
-                          } catch (err) {
-                            console.error('Update payout status error:', err)
-                            alert('Failed to update payout status')
-                          }
-                        }}
-                      >{r.status === 'settled' ? 'Settled' : 'Unsettled'}</button>
+              <div className="settle-layout">
+                <div className="settle-left">
+                  <div className="settle-table">
+                    {(() => {
+                      const totalDue = settlements
+                        .filter(r => (r.status || 'unsettled') !== 'settled')
+                        .reduce((sum, r) => sum + Number(r.net_payout || r.payout_amount || 0), 0)
+                      return (
+                        <div className="settle-summary" role="region" aria-label="Total payouts due">
+                          <div className="settle-summary-label">Total Payouts Due</div>
+                          <div className="settle-summary-value">₹ {Number(totalDue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                        </div>
+                      )
+                    })()}
+                    <div className="settle-row settle-head">
+                      <div>Date</div>
+                      <div>Orders</div>
+                      <div>Total Revenue</div>
+                      <div>Net Payout</div>
+                      <div>Payment Status</div>
+                      <div>Settled At</div>
                     </div>
+                    {settlements.map(r => (
+                      <div key={r.order_date} className="settle-row">
+                        <div>{new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                        <div>{r.orders_count}</div>
+                        <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                        <div>
+                          <button
+                            className={`btn-primary ${r.status === 'settled' ? 'btn-status-settled' : 'btn-status-unsettled'}`}
+                            onClick={async () => {
+                              try {
+                                const dateIso = new Date(r.order_date).toISOString().slice(0,10)
+                                const nextStatus = (r.status === 'settled') ? 'unsettled' : 'settled'
+                                const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENT_PAID(activeCanteen.CanteenId), {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ date: dateIso, status: nextStatus })
+                                })
+                                if (!res.ok) throw new Error('Failed to update status')
+                                const payload = await res.json()
+                                const updated = payload?.payout
+                                setSettlements(prev => prev.map(row => {
+                                  if (row.order_date !== r.order_date) return row
+                                  return {
+                                    ...row,
+                                    status: nextStatus,
+                                    settled_at: nextStatus === 'unsettled' ? null : (updated?.settled_at ?? row.settled_at)
+                                  }
+                                }))
+                              } catch (err) {
+                                console.error('Update payout status error:', err)
+                                alert('Failed to update payout status')
+                              }
+                            }}
+                          >{r.status === 'settled' ? 'Settled' : 'Unsettled'}</button>
+                        </div>
+                        <div>{r.settled_at ? new Date(r.settled_at).toLocaleString('en-IN', { hour12: false }) : '—'}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <div className="settle-right">
+                  <div className="chart-card">
+                    <div className="chart-title">Daily Net Payouts</div>
+                    {(() => {
+                      const data = settlements
+                        .slice()
+                        .sort((a,b) => new Date(a.order_date) - new Date(b.order_date))
+                        .map(r => {
+                          const amount = Number(r.net_payout || r.payout_amount || 0)
+                          const isSettled = (r.status === 'settled')
+                          return {
+                            dateLabel: new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+                            value: amount,
+                            settled: isSettled,
+                          }
+                        })
+                      const maxVal = Math.max(1, ...data.map(d => d.value))
+                      return (
+                        <div className="bars">
+                          {data.map((d, idx) => {
+                            const heightPct = Math.round((d.value / maxVal) * 100)
+                            return (
+                              <div key={idx} className="bar">
+                                <div className={`bar-fill ${d.settled ? 'bar-fill-settled' : 'bar-fill-unsettled'}`} style={{ height: `${heightPct}%` }} title={`₹ ${d.value.toLocaleString('en-IN')}`}></div>
+                                <div className="bar-label">{d.dateLabel}</div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                </div>
               </div>
             )}
           </div>

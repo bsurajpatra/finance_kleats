@@ -1,6 +1,6 @@
 import { getAllCanteens } from '../models/canteenModel.js'
 import { getDailyRevenueByCanteen } from '../models/ordersModel.js'
-import { upsertPayoutRecord, getPayoutsMapByCanteen, setPayoutStatus } from '../models/payoutsModel.js'
+import { upsertPayoutRecord, getPayoutsMapByCanteen, setPayoutStatus, getPayoutByKey } from '../models/payoutsModel.js'
 
 export async function fetchCanteens(req, res) {
   try {
@@ -56,6 +56,8 @@ export async function setPayoutPaid(req, res) {
     try {
       const normalized = status === 'settled' ? 'settled' : 'unsettled'
       await setPayoutStatus({ canteenId: Number(id), payoutDate: date, status: normalized })
+      const updated = await getPayoutByKey({ canteenId: Number(id), payoutDate: date })
+      return res.json({ success: true, payout: updated })
     } catch (err) {
       return res.status(400).json({ error: 'payouts table missing or schema mismatch', details: err.message })
     }
