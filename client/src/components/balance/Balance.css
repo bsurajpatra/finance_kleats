@@ -120,7 +120,7 @@
   flex: 1;
 }
 
-.refresh-btn {
+.balance-refresh-btn {
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -137,12 +137,12 @@
   justify-content: center;
 }
 
-.refresh-btn svg {
+.balance-refresh-btn svg {
   width: 20px;
   height: 20px;
 }
 
-.refresh-btn:hover {
+.balance-refresh-btn:hover {
   background: rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.5);
   transform: rotate(180deg);
@@ -544,13 +544,13 @@
     font-size: 1.1rem;
   }
   
-  .refresh-btn {
+  .balance-refresh-btn {
     width: 32px;
     height: 32px;
     padding: 0.4rem;
   }
   
-  .refresh-btn svg {
+  .balance-refresh-btn svg {
     width: 16px;
     height: 16px;
   }
@@ -672,13 +672,13 @@
     font-size: 1rem;
   }
   
-  .refresh-btn {
+  .balance-refresh-btn {
     width: 28px;
     height: 28px;
     padding: 0.3rem;
   }
   
-  .refresh-btn svg {
+  .balance-refresh-btn svg {
     width: 14px;
     height: 14px;
   }
@@ -796,13 +796,13 @@
     font-size: 0.9rem;
   }
   
-  .refresh-btn {
+  .balance-refresh-btn {
     width: 24px;
     height: 24px;
     padding: 0.25rem;
   }
   
-  .refresh-btn svg {
+  .balance-refresh-btn svg {
     width: 12px;
     height: 12px;
   }
