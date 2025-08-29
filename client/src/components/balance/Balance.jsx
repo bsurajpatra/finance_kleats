@@ -14,17 +14,17 @@ const Balance = () => {
   const fetchSummary = async () => {
     try {
       setLoading(true);
-      const response = await authFetch(API_ENDPOINTS.SUMMARY);
-      if (!response.ok) throw new Error('Failed to fetch summary');
+      const response = await authFetch(API_ENDPOINTS.TRANSACTIONS);
+      if (!response.ok) throw new Error('Failed to fetch transactions');
       const data = await response.json();
       // Ensure deterministic ordering for transactions used to compute balances
-      const orderedTx = [...(data.transactions || [])]
+      const orderedTx = [...data]
         .sort((a, b) => new Date(a.date) - new Date(b.date) || (a.id - b.id));
       setTransactions(orderedTx);
       setError(null);
     } catch (err) {
       setError('Failed to load balance data. Please try again later.');
-      console.error('Error fetching summary:', err);
+      console.error('Error fetching transactions:', err);
     } finally {
       setLoading(false);
     }
@@ -46,14 +46,22 @@ const Balance = () => {
 
   const getCurrentBalance = () => {
     if (transactions.length === 0) return 0;
-    return transactions[transactions.length - 1]?.remaining_balance || 0;
+    
+    // Calculate running balance based on transaction_type and amount
+    let runningBalance = 0;
+    for (const tx of transactions) {
+      if (tx.transaction_type === 'credit') {
+        runningBalance += Number(tx.amount);
+      } else if (tx.transaction_type === 'debit') {
+        runningBalance -= Number(tx.amount);
+      }
+    }
+    return runningBalance;
   };
 
   const getRecentTransactions = () => {
     return transactions.slice(-5).reverse(); 
   };
-
-
 
   if (loading) {
     return (
@@ -146,8 +154,8 @@ const Balance = () => {
         ) : (
           <div className="transactions-list">
             {recentTransactions.map((transaction) => {
-              const isCredit = transaction.credit > 0;
-              const amount = isCredit ? transaction.credit : transaction.debit;
+              const isCredit = transaction.transaction_type === 'credit';
+              const amount = Number(transaction.amount);
               const sign = isCredit ? '+' : '-';
               
               return (

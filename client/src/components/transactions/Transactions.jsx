@@ -44,10 +44,9 @@ const Transactions = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalData, setModalData] = useState({
     date: '',
-    amount: '',
     description: '',
-    type: 'credit',
-    notes: ''
+    transaction_type: 'credit',
+    amount: ''
   });
   const [modalError, setModalError] = useState('');
   const [isAddingTransaction, setIsAddingTransaction] = useState(false);
@@ -62,7 +61,6 @@ const Transactions = () => {
   const [transactionsPerPage] = useState(20);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
 
-
   const filterRef = useRef(null);
   const [descPopup, setDescPopup] = useState({ open: false, text: '', title: '' });
   const longPressTimerRef = useRef(null);
@@ -71,8 +69,6 @@ const Transactions = () => {
   useEffect(() => {
     fetchTransactions();
   }, []);
-
-
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -153,7 +149,6 @@ const Transactions = () => {
       clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
-    // Do not auto-close on touch end; user can tap outside to close
   };
 
   const fetchTransactions = async () => {
@@ -187,12 +182,6 @@ const Transactions = () => {
     }).format(amount || 0);
   };
 
-  const getTransactionType = (credit, debit) => {
-    if (credit > 0) return 'credit';
-    if (debit > 0) return 'debit';
-    return 'neutral';
-  };
-
   const handleCellDoubleClick = (rowId, field, value) => {
     setEditingCell({ rowId, field, value });
     setEditValue(value);
@@ -211,18 +200,6 @@ const Transactions = () => {
     try {
       const token = localStorage.getItem('token');
       let updateData = { [editingCell.field]: editValue };
-      
-      if (editingCell.field === 'credit') {
-        updateData = { 
-          credit: Number(editValue) || 0, 
-          debit: 0 
-        };
-      } else if (editingCell.field === 'debit') {
-        updateData = { 
-          debit: Number(editValue) || 0, 
-          credit: 0 
-        };
-      }
       
       setTransactions(prev => prev.map(tx => 
         tx.id === editingCell.rowId 
@@ -294,7 +271,7 @@ const Transactions = () => {
         throw new Error(errorData.error || 'Failed to delete transaction');
       }
       
-      // Refresh data to ensure balances are recalculated
+      // Refresh data
       setTimeout(() => {
         fetchTransactions();
       }, 100);
@@ -340,7 +317,6 @@ const Transactions = () => {
     if (selectedTransactions.length === 0) return;
     
     const originalTransactions = [...transactions];
-    const transactionsToDelete = transactions.filter(tx => selectedTransactions.includes(tx.id));
     
     try {
       // Optimistic update - remove from UI immediately
@@ -350,7 +326,7 @@ const Transactions = () => {
       
       const token = localStorage.getItem('token');
       
-      // Delete transactions one by one (could be optimized with a bulk endpoint)
+      // Delete transactions one by one
       for (const transactionId of selectedTransactions) {
         const response = await fetch(`${API_ENDPOINTS.TRANSACTIONS}/${transactionId}`, {
           method: 'DELETE',
@@ -365,7 +341,7 @@ const Transactions = () => {
         }
       }
       
-      // Refresh data to ensure balances are recalculated
+      // Refresh data
       setTimeout(() => {
         fetchTransactions();
       }, 100);
@@ -451,8 +427,8 @@ const Transactions = () => {
       const afterStart = !startDate || txDate >= new Date(startDate);
       const beforeEnd = !endDate || txDate <= new Date(endDate);
       let typeMatch = true;
-      if (typeFilter === 'debits') typeMatch = tx.debit > 0;
-      if (typeFilter === 'credits') typeMatch = tx.credit > 0;
+      if (typeFilter === 'debit') typeMatch = tx.transaction_type === 'debit';
+      if (typeFilter === 'credit') typeMatch = tx.transaction_type === 'credit';
       return afterStart && beforeEnd && typeMatch;
     })
     .sort((a, b) => {
@@ -473,21 +449,15 @@ const Transactions = () => {
       'S.No.',
       'Date',
       'Description',
-      'Credit',
-      'Debit',
-      'Previous Balance',
-      'Remaining Balance',
-      'Notes'
+      'Transaction Type',
+      'Amount'
     ];
     const rows = filteredTransactions.map((tx, idx) => [
       idx + 1,
       formatDate(tx.date),
       tx.description || 'N/A',
-      tx.credit > 0 ? tx.credit : '',
-      tx.debit > 0 ? tx.debit : '',
-      tx.previous_balance,
-      tx.remaining_balance,
-      tx.notes || ''
+      tx.transaction_type,
+      formatAmount(tx.amount)
     ]);
     const csvContent =
       [headers, ...rows]
@@ -511,21 +481,15 @@ const Transactions = () => {
       'S.No.',
       'Date',
       'Description',
-      'Credit',
-      'Debit',
-      'Previous Balance',
-      'Remaining Balance',
-      'Notes'
+      'Transaction Type',
+      'Amount'
     ];
     const rows = filteredTransactions.map((tx, idx) => [
       idx + 1,
       formatDate(tx.date),
       tx.description || 'N/A',
-      tx.credit > 0 ? tx.credit : '',
-      tx.debit > 0 ? tx.debit : '',
-      tx.previous_balance,
-      tx.remaining_balance,
-      tx.notes || ''
+      tx.transaction_type,
+      formatAmount(tx.amount)
     ]);
     
     let txtContent = 'TRANSACTIONS REPORT\n';
@@ -567,21 +531,15 @@ const Transactions = () => {
       'S.No.',
       'Date',
       'Description',
-      'Credit (₹)',
-      'Debit (₹)',
-      'Previous Balance (₹)',
-      'Remaining Balance (₹)',
-      'Notes'
+      'Transaction Type',
+      'Amount (₹)'
     ]];
     const rows = filteredTransactions.map((tx, idx) => [
       idx + 1,
       formatDate(tx.date),
       tx.description || 'N/A',
-      tx.credit > 0 ? Number(tx.credit).toLocaleString('en-IN') : '',
-      tx.debit > 0 ? Number(tx.debit).toLocaleString('en-IN') : '',
-      Number(tx.previous_balance || 0).toLocaleString('en-IN'),
-      Number(tx.remaining_balance || 0).toLocaleString('en-IN'),
-      tx.notes || ''
+      tx.transaction_type,
+      formatAmount(tx.amount)
     ]);
 
     doc.autoTable({
@@ -593,13 +551,10 @@ const Transactions = () => {
       alternateRowStyles: { fillColor: [248, 248, 248] },
       columnStyles: {
         0: { cellWidth: 50 },
-        1: { cellWidth: 80 },
-        2: { cellWidth: 200 },
-        3: { cellWidth: 90, halign: 'right' },
-        4: { cellWidth: 90, halign: 'right' },
-        5: { cellWidth: 140, halign: 'right' },
-        6: { cellWidth: 160, halign: 'right' },
-        7: { cellWidth: 160 },
+        1: { cellWidth: 100 },
+        2: { cellWidth: 300 },
+        3: { cellWidth: 120 },
+        4: { cellWidth: 120, halign: 'right' }
       },
       didDrawPage: (data) => {
         // Footer
@@ -625,8 +580,8 @@ const Transactions = () => {
   const handleAddTransaction = async (e) => {
     e.preventDefault();
     setModalError('');
-    if (!modalData.date || !modalData.amount || !modalData.type) {
-      setModalError('Date, amount, and type are required.');
+    if (!modalData.date || !modalData.amount || !modalData.transaction_type) {
+      setModalError('Date, amount, and transaction type are required.');
       return;
     }
     
@@ -637,26 +592,21 @@ const Transactions = () => {
       const token = localStorage.getItem('token');
       const newTransactionData = {
         date: modalData.date,
-        amount: Number(modalData.amount),
         description: modalData.description,
-        type: modalData.type,
-        notes: modalData.notes
+        transaction_type: modalData.transaction_type,
+        amount: Number(modalData.amount)
       };
       
       const tempTransaction = {
         id: `temp-${Date.now()}`,
         ...newTransactionData,
-        credit: newTransactionData.type === 'credit' ? newTransactionData.amount : 0,
-        debit: newTransactionData.type === 'debit' ? newTransactionData.amount : 0,
-        previous_balance: 0, 
-        remaining_balance: 0, 
         isPending: true 
       };
       
       setTransactions(prev => [...prev, tempTransaction]);
       
       setShowModal(false);
-      setModalData({ date: '', amount: '', description: '', type: 'credit', notes: '' });
+      setModalData({ date: '', description: '', transaction_type: 'credit', amount: '' });
       
       const res = await fetch(API_ENDPOINTS.TRANSACTIONS, {
         method: 'POST',
@@ -788,9 +738,9 @@ const Transactions = () => {
                     <input
                       type="radio"
                       name="typeFilter"
-                      value="debits"
-                      checked={typeFilter === 'debits'}
-                      onChange={() => setTypeFilter('debits')}
+                      value="debit"
+                      checked={typeFilter === 'debit'}
+                      onChange={() => setTypeFilter('debit')}
                     />
                     Debits only
                   </label>
@@ -798,9 +748,9 @@ const Transactions = () => {
                     <input
                       type="radio"
                       name="typeFilter"
-                      value="credits"
-                      checked={typeFilter === 'credits'}
-                      onChange={() => setTypeFilter('credits')}
+                      value="credit"
+                      checked={typeFilter === 'credit'}
+                      onChange={() => setTypeFilter('credit')}
                     />
                     Credits only
                   </label>
@@ -856,23 +806,19 @@ const Transactions = () => {
                 <input type="date" name="date" value={modalData.date} onChange={handleModalChange} required />
               </label>
               <label>
-                Amount:
-                <input type="number" name="amount" value={modalData.amount} onChange={handleModalChange} min="0.01" step="0.01" required />
-              </label>
-              <label>
                 Description:
                 <input type="text" name="description" value={modalData.description} onChange={handleModalChange} />
               </label>
               <label>
                 Transaction Type:
-                <select name="type" value={modalData.type} onChange={handleModalChange} required>
+                <select name="transaction_type" value={modalData.transaction_type} onChange={handleModalChange} required>
                   <option value="credit">Credit</option>
                   <option value="debit">Debit</option>
                 </select>
               </label>
               <label>
-                Notes:
-                <textarea name="notes" value={modalData.notes} onChange={handleModalChange} />
+                Amount:
+                <input type="number" name="amount" value={modalData.amount} onChange={handleModalChange} min="0.01" step="0.01" required />
               </label>
               {modalError && <div className="transactions-modal-error">{modalError}</div>}
               <div className="transactions-modal-actions">
@@ -906,10 +852,10 @@ const Transactions = () => {
               <div className="transaction-preview">
                 <p><strong>Date:</strong> {transactionToDelete && formatDate(transactionToDelete.date)}</p>
                 <p><strong>Description:</strong> {transactionToDelete?.description || 'N/A'}</p>
-                <p><strong>Amount:</strong> {transactionToDelete && formatAmount(transactionToDelete.credit > 0 ? transactionToDelete.credit : transactionToDelete.debit)}</p>
-                <p><strong>Type:</strong> {transactionToDelete && (transactionToDelete.credit > 0 ? 'Credit' : 'Debit')}</p>
+                <p><strong>Type:</strong> {transactionToDelete?.transaction_type}</p>
+                <p><strong>Amount:</strong> {transactionToDelete && formatAmount(transactionToDelete.amount)}</p>
               </div>
-              <p className="warning-text">⚠️ This action cannot be undone and will recalculate all subsequent balances.</p>
+              <p className="warning-text">⚠️ This action cannot be undone.</p>
             </div>
             <div className="transactions-modal-actions">
               <button 
@@ -945,7 +891,8 @@ const Transactions = () => {
                       <div key={tx.id} className="selected-transaction-item">
                         <span>{formatDate(tx.date)}</span>
                         <span>{tx.description || 'N/A'}</span>
-                        <span>{formatAmount(tx.credit > 0 ? tx.credit : tx.debit)}</span>
+                        <span>{tx.transaction_type}</span>
+                        <span>{formatAmount(tx.amount)}</span>
                       </div>
                     ))}
                   {selectedTransactions.length > 5 && (
@@ -955,7 +902,7 @@ const Transactions = () => {
                   )}
                 </div>
               </div>
-              <p className="warning-text">⚠️ This action cannot be undone and will recalculate all subsequent balances.</p>
+              <p className="warning-text">⚠️ This action cannot be undone.</p>
             </div>
             <div className="transactions-modal-actions">
               <button 
@@ -999,22 +946,18 @@ const Transactions = () => {
                 <th>S.No.</th>
                 <th>Date</th>
                 <th>Description</th>
-                <th>Credit</th>
-                <th>Debit</th>
-                <th>Previous Balance</th>
-                <th>Remaining Balance</th>
-                <th>Notes</th>
+                <th>Transaction Type</th>
+                <th>Amount</th>
               </tr>
             </thead>
             <tbody>
               {currentTransactions.map((transaction, index) => {
-                const transactionType = getTransactionType(transaction.credit, transaction.debit);
                 const isEditing = editingCell?.rowId === transaction.id;
                 const isPending = transaction.isPending;
                 
                 return (
                   <React.Fragment key={transaction.id}>
-                    <tr className={`transaction-row ${transactionType} ${isPending ? 'pending-transaction' : ''}`}>
+                    <tr className={`transaction-row ${transaction.transaction_type} ${isPending ? 'pending-transaction' : ''}`}>
                       <td className="checkbox-cell">
                         <input 
                           type="checkbox" 
@@ -1064,10 +1007,29 @@ const Transactions = () => {
                         )}
                       </td>
                       <td 
-                        className={`amount credit ${transaction.credit > 0 ? 'positive' : ''} editable-cell`}
-                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'credit', transaction.credit || 0)}
+                        className={`transaction-type ${transaction.transaction_type}`}
+                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'transaction_type', transaction.transaction_type)}
                       >
-                        {isEditing && editingCell?.field === 'credit' ? (
+                        {isEditing && editingCell?.field === 'transaction_type' ? (
+                          <select
+                            value={editValue}
+                            onChange={handleEditChange}
+                            className="edit-input"
+                          >
+                            <option value="credit">Credit</option>
+                            <option value="debit">Debit</option>
+                          </select>
+                        ) : (
+                          <span className={isPending ? 'pending-text' : ''}>
+                            {transaction.transaction_type}
+                          </span>
+                        )}
+                      </td>
+                      <td 
+                        className={`amount ${transaction.transaction_type} editable-cell`}
+                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'amount', transaction.amount || 0)}
+                      >
+                        {isEditing && editingCell?.field === 'amount' ? (
                           <input
                             type="number"
                             value={editValue}
@@ -1079,65 +1041,14 @@ const Transactions = () => {
                           />
                         ) : (
                           <span className={isPending ? 'pending-text' : ''}>
-                            {transaction.credit > 0 ? formatAmount(transaction.credit) : '-'}
-                          </span>
-                        )}
-                      </td>
-                      <td 
-                        className={`amount debit ${transaction.debit > 0 ? 'negative' : ''} editable-cell`}
-                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'debit', transaction.debit || 0)}
-                      >
-                        {isEditing && editingCell?.field === 'debit' ? (
-                          <input
-                            type="number"
-                            value={editValue}
-                            onChange={handleEditChange}
-                            className="edit-input"
-                            min="0"
-                            step="0.01"
-                            placeholder="Enter amount"
-                          />
-                        ) : (
-                          <span className={isPending ? 'pending-text' : ''}>
-                            {transaction.debit > 0 ? formatAmount(transaction.debit) : '-'}
-                          </span>
-                        )}
-                      </td>
-                      <td className="balance">
-                        <span className={isPending ? 'pending-text' : ''}>
-                          {formatAmount(transaction.previous_balance)}
-                        </span>
-                      </td>
-                      <td className="balance">
-                        <span className={isPending ? 'pending-text' : ''}>
-                          {formatAmount(transaction.remaining_balance)}
-                        </span>
-                      </td>
-                      <td 
-                        className="editable-cell notes"
-                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'notes', transaction.notes || '')}
-                        onTouchStart={(e) => handleDescriptionTouchStart(transaction.notes || 'N/A', e, 'Notes')}
-                        onTouchMove={handleDescriptionTouchMove}
-                        onTouchEnd={handleDescriptionTouchEnd}
-                        onContextMenu={(e) => e.preventDefault()}
-                      >
-                        {isEditing && editingCell?.field === 'notes' ? (
-                          <input
-                            type="text"
-                            value={editValue}
-                            onChange={handleEditChange}
-                            className="edit-input"
-                          />
-                        ) : (
-                          <span className={isPending ? 'pending-text' : ''}>
-                            {transaction.notes || '-'}
+                            {formatAmount(transaction.amount)}
                           </span>
                         )}
                       </td>
                     </tr>
                     {isEditing && (
                       <tr className="edit-actions-row">
-                        <td colSpan="9">
+                        <td colSpan="6">
                           <div className="edit-actions">
                             <button onClick={handleSaveEdit} className="save-btn">Save</button>
                             <button onClick={handleCancelEdit} className="cancel-btn">Cancel</button>

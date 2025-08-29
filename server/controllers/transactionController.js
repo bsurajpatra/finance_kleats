@@ -1,4 +1,4 @@
-import { getAllTransactions, createTransaction, updateTransaction, deleteTransaction } from '../models/transactionModel.js'
+import { getAllTransactions, createTransaction, updateTransaction, deleteTransaction, getTransactionById, getTransactionsByDateRange, getTransactionsByType } from '../models/transactionModel.js'
 
 export async function fetchTransactions(req, res) {
   try {
@@ -13,17 +13,31 @@ export async function fetchTransactions(req, res) {
 export async function addTransaction(req, res) {
   try {
     console.log('Received transaction data:', req.body);
-    const { date, amount, description, type, notes } = req.body;
-    if (!date || !amount || !type) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    const { date, description, transaction_type, amount } = req.body;
+    
+    // Validation
+    if (!date || !description || !transaction_type || !amount) {
+      return res.status(400).json({ error: 'Missing required fields: date, description, transaction_type, amount' });
     }
-    if (type !== 'credit' && type !== 'debit') {
-      return res.status(400).json({ error: 'Invalid transaction type' });
+    
+    if (transaction_type !== 'credit' && transaction_type !== 'debit') {
+      return res.status(400).json({ error: 'Invalid transaction type. Must be "credit" or "debit"' });
     }
-    console.log('Creating transaction with:', { date, amount: Number(amount), description, type, notes });
-    const newTx = await createTransaction({ date, amount: Number(amount), description, type, notes });
-    console.log('Transaction created successfully:', newTx);
-    res.status(201).json(newTx);
+    
+    if (isNaN(amount) || Number(amount) <= 0) {
+      return res.status(400).json({ error: 'Amount must be a positive number' });
+    }
+    
+    console.log('Creating transaction with:', { date, description, transaction_type, amount: Number(amount) });
+    const newTransaction = await createTransaction({ 
+      date, 
+      description, 
+      transaction_type, 
+      amount: Number(amount) 
+    });
+    
+    console.log('Transaction created successfully:', newTransaction);
+    res.status(201).json(newTransaction);
   } catch (err) {
     console.error('Error adding transaction:', err);
     console.error('Error details:', err.message);
@@ -39,15 +53,25 @@ export async function updateTransactionController(req, res) {
     
     console.log('Updating transaction:', id, 'with:', updates);
     
-    const updatedTx = await updateTransaction(id, updates);
-    console.log('Transaction updated successfully:', updatedTx);
+    // Validate transaction_type if it's being updated
+    if (updates.transaction_type && updates.transaction_type !== 'credit' && updates.transaction_type !== 'debit') {
+      return res.status(400).json({ error: 'Invalid transaction type. Must be "credit" or "debit"' });
+    }
     
-    res.json(updatedTx);
+    // Validate amount if it's being updated
+    if (updates.amount && (isNaN(updates.amount) || Number(updates.amount) <= 0)) {
+      return res.status(400).json({ error: 'Amount must be a positive number' });
+    }
+    
+    const updatedTransaction = await updateTransaction(id, updates);
+    console.log('Transaction updated successfully:', updatedTransaction);
+    
+    res.json(updatedTransaction);
   } catch (err) {
     console.error('Error updating transaction:', err);
     res.status(500).json({ error: 'Failed to update transaction', details: err.message });
   }
-} 
+}
 
 export async function deleteTransactionController(req, res) {
   try {
@@ -62,5 +86,54 @@ export async function deleteTransactionController(req, res) {
   } catch (err) {
     console.error('Error deleting transaction:', err);
     res.status(500).json({ error: 'Failed to delete transaction', details: err.message });
+  }
+}
+
+export async function getTransactionByIdController(req, res) {
+  try {
+    const { id } = req.params;
+    
+    const transaction = await getTransactionById(id);
+    
+    if (!transaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+    
+    res.json(transaction);
+  } catch (err) {
+    console.error('Error fetching transaction by ID:', err);
+    res.status(500).json({ error: 'Failed to fetch transaction', details: err.message });
+  }
+}
+
+export async function getTransactionsByDateRangeController(req, res) {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'Both startDate and endDate are required' });
+    }
+    
+    const transactions = await getTransactionsByDateRange(startDate, endDate);
+    res.json(transactions);
+  } catch (err) {
+    console.error('Error fetching transactions by date range:', err);
+    res.status(500).json({ error: 'Failed to fetch transactions', details: err.message });
+  }
+}
+
+export async function getTransactionsByTypeController(req, res) {
+  try {
+    const { transaction_type } = req.params;
+    
+    if (transaction_type !== 'credit' && transaction_type !== 'debit') {
+      return res.status(400).json({ error: 'Invalid transaction type. Must be "credit" or "debit"' });
+    }
+    
+    const transactions = await getTransactionsByType(transaction_type);
+    res.json(transactions);
+  } catch (err) {
+    console.error('Error fetching transactions by type:', err);
+    res.status(500).json({ error: 'Failed to fetch transactions', details: err.message });
   }
 } 

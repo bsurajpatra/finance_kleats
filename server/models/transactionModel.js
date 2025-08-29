@@ -2,212 +2,96 @@ import { pool } from '../db/mysql.js'
 
 export async function getAllTransactions() {
   const [rows] = await pool.query(
-    'SELECT * FROM finance_transactions ORDER BY date ASC, id ASC'
+    'SELECT * FROM financial_transactions ORDER BY date DESC, created_at DESC'
   )
   return rows
 }
 
-export async function createTransaction({ date, description, amount, type, notes }) {
-  const conn = await pool.getConnection()
-  try {
-    await conn.beginTransaction()
-
-    const [[prev]] = await conn.query(
-      `SELECT id, remaining_balance, date
-       FROM finance_transactions
-       WHERE date <= ?
-       ORDER BY date DESC, id DESC
-       LIMIT 1`,
-      [date]
-    )
-
-    const previous_balance = prev?.remaining_balance || 0
-    const credit = type === 'credit' ? amount : 0
-    const debit = type === 'debit' ? amount : 0
-    const remaining_balance = previous_balance + credit - debit
-
-    const [insertRes] = await conn.query(
-      `INSERT INTO finance_transactions
-        (date, description, credit, debit, previous_balance, remaining_balance, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [date, description, credit, debit, previous_balance, remaining_balance, notes]
-    )
-
-    const insertedId = insertRes.insertId
-
-    const [subs] = await conn.query(
-      `SELECT id, date, credit, debit
-       FROM finance_transactions
-       WHERE date > ?
-          OR (date = ? AND id > ?)
-       ORDER BY date ASC, id ASC`,
-      [date, date, insertedId]
-    )
-
-    let runningBalance = remaining_balance
-    for (const tx of subs) {
-      const newRemaining = runningBalance + Number(tx.credit) - Number(tx.debit)
-      await conn.query(
-        `UPDATE finance_transactions
-         SET previous_balance = ?, remaining_balance = ?
-         WHERE id = ?`,
-        [runningBalance, newRemaining, tx.id]
-      )
-      runningBalance = newRemaining
-    }
-
-    const [[inserted]] = await conn.query(
-      `SELECT * FROM finance_transactions WHERE id = ?`,
-      [insertedId]
-    )
-
-    await conn.commit()
-    return inserted
-  } catch (error) {
-    await conn.rollback()
-    throw error
-  } finally {
-    conn.release()
-  }
+export async function createTransaction({ date, description, transaction_type, amount }) {
+  const [result] = await pool.query(
+    `INSERT INTO financial_transactions (date, description, transaction_type, amount)
+     VALUES (?, ?, ?, ?)`,
+    [date, description, transaction_type, amount]
+  )
+  
+  const [newTransaction] = await pool.query(
+    'SELECT * FROM financial_transactions WHERE id = ?',
+    [result.insertId]
+  )
+  
+  return newTransaction[0]
 }
-
-// Helper retained behavior in SQL path: handled inline in create/update/delete
 
 export async function updateTransaction(id, updates) {
-  const conn = await pool.getConnection()
-  try {
-    await conn.beginTransaction()
-
-    if (updates && Object.keys(updates).length > 0) {
-      const fields = []
-      const values = []
-      for (const [key, value] of Object.entries(updates)) {
-        fields.push(`${key} = ?`)
-        values.push(value)
-      }
-      values.push(id)
-      await conn.query(
-        `UPDATE finance_transactions SET ${fields.join(', ')} WHERE id = ?`,
-        values
-      )
+  const fields = []
+  const values = []
+  
+  for (const [key, value] of Object.entries(updates)) {
+    if (['date', 'description', 'transaction_type', 'amount'].includes(key)) {
+      fields.push(`${key} = ?`)
+      values.push(value)
     }
-
-    const [[currentTx]] = await conn.query(
-      `SELECT * FROM finance_transactions WHERE id = ?`,
-      [id]
-    )
-    if (!currentTx) throw new Error('Transaction not found')
-
-    const [[prev]] = await conn.query(
-      `SELECT remaining_balance
-       FROM finance_transactions
-       WHERE date < ?
-          OR (date = ? AND id < ?)
-       ORDER BY date DESC, id DESC
-       LIMIT 1`,
-      [currentTx.date, currentTx.date, id]
-    )
-    const previous_balance = prev?.remaining_balance || 0
-    const remaining_balance = previous_balance + Number(currentTx.credit) - Number(currentTx.debit)
-
-    await conn.query(
-      `UPDATE finance_transactions
-       SET previous_balance = ?, remaining_balance = ?
-       WHERE id = ?`,
-      [previous_balance, remaining_balance, id]
-    )
-
-    const [subs] = await conn.query(
-      `SELECT id, date, credit, debit
-       FROM finance_transactions
-       WHERE date > ?
-          OR (date = ? AND id > ?)
-       ORDER BY date ASC, id ASC`,
-      [currentTx.date, currentTx.date, id]
-    )
-
-    let runningBalance = remaining_balance
-    for (const tx of subs) {
-      const newRemaining = runningBalance + Number(tx.credit) - Number(tx.debit)
-      await conn.query(
-        `UPDATE finance_transactions
-         SET previous_balance = ?, remaining_balance = ?
-         WHERE id = ?`,
-        [runningBalance, newRemaining, tx.id]
-      )
-      runningBalance = newRemaining
-    }
-
-    const [[updated]] = await conn.query(
-      `SELECT * FROM finance_transactions WHERE id = ?`,
-      [id]
-    )
-
-    await conn.commit()
-    return updated
-  } catch (error) {
-    await conn.rollback()
-    throw error
-  } finally {
-    conn.release()
   }
+  
+  if (fields.length === 0) {
+    throw new Error('No valid fields to update')
+  }
+  
+  values.push(id)
+  
+  await pool.query(
+    `UPDATE financial_transactions SET ${fields.join(', ')} WHERE id = ?`,
+    values
+  )
+  
+  const [updatedTransaction] = await pool.query(
+    'SELECT * FROM financial_transactions WHERE id = ?',
+    [id]
+  )
+  
+  return updatedTransaction[0]
 }
-
-// recalculateBalancesAsync inlined in updateTransaction
 
 export async function deleteTransaction(id) {
-  const conn = await pool.getConnection()
-  try {
-    await conn.beginTransaction()
-
-    const [[toDelete]] = await conn.query(
-      `SELECT * FROM finance_transactions WHERE id = ?`,
-      [id]
-    )
-    if (!toDelete) throw new Error('Transaction not found')
-
-    const [[prev]] = await conn.query(
-      `SELECT remaining_balance
-       FROM finance_transactions
-       WHERE date < ?
-          OR (date = ? AND id < ?)
-       ORDER BY date DESC, id DESC
-       LIMIT 1`,
-      [toDelete.date, toDelete.date, toDelete.id]
-    )
-    const startingBalance = prev?.remaining_balance || 0
-
-    await conn.query(`DELETE FROM finance_transactions WHERE id = ?`, [id])
-
-    const [subs] = await conn.query(
-      `SELECT id, date, credit, debit
-       FROM finance_transactions
-       WHERE date > ?
-          OR (date = ? AND id > ?)
-       ORDER BY date ASC, id ASC`,
-      [toDelete.date, toDelete.date, toDelete.id]
-    )
-
-    let runningBalance = startingBalance
-    for (const tx of subs) {
-      const newRemaining = runningBalance + Number(tx.credit) - Number(tx.debit)
-      await conn.query(
-        `UPDATE finance_transactions
-         SET previous_balance = ?, remaining_balance = ?
-         WHERE id = ?`,
-        [runningBalance, newRemaining, tx.id]
-      )
-      runningBalance = newRemaining
-    }
-
-    await conn.commit()
-    return { success: true }
-  } catch (error) {
-    await conn.rollback()
-    throw error
-  } finally {
-    conn.release()
+  const [result] = await pool.query(
+    'DELETE FROM financial_transactions WHERE id = ?',
+    [id]
+  )
+  
+  if (result.affectedRows === 0) {
+    throw new Error('Transaction not found')
   }
+  
+  return { success: true, message: 'Transaction deleted successfully' }
 }
 
-// recalculateBalancesAfterDeletion handled inline in deleteTransaction
+export async function getTransactionById(id) {
+  const [rows] = await pool.query(
+    'SELECT * FROM financial_transactions WHERE id = ?',
+    [id]
+  )
+  
+  return rows[0] || null
+}
+
+export async function getTransactionsByDateRange(startDate, endDate) {
+  const [rows] = await pool.query(
+    `SELECT * FROM financial_transactions 
+     WHERE date BETWEEN ? AND ? 
+     ORDER BY date DESC, created_at DESC`,
+    [startDate, endDate]
+  )
+  
+  return rows
+}
+
+export async function getTransactionsByType(transaction_type) {
+  const [rows] = await pool.query(
+    `SELECT * FROM financial_transactions 
+     WHERE transaction_type = ? 
+     ORDER BY date DESC, created_at DESC`,
+    [transaction_type]
+  )
+  
+  return rows
+}
