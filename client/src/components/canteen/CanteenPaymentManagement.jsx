@@ -66,6 +66,8 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
   const [settlements, setSettlements] = useState([]);
   const [settleLoading, setSettleLoading] = useState(false);
   const [settleError, setSettleError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const openSettlements = async (canteen) => {
     try {
@@ -98,6 +100,7 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
     setActiveCanteen(null);
     setSettlements([]);
     setSettleError(null);
+    setCurrentPage(1);
     onNavVisibilityChange && onNavVisibilityChange(false);
     onExitSettlements && onExitSettlements();
     const sp = new URLSearchParams(window.location.search);
@@ -138,70 +141,120 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
             ) : settlements.length === 0 ? (
               <div className="settle-empty">No confirmed orders found.</div>
             ) : (
-              <div className="settle-layout">
-                <div className="settle-left">
-                  <div className="settle-table">
-                    {(() => {
-                      const totalDue = settlements
-                        .filter(r => (r.status || 'unsettled') !== 'settled')
-                        .reduce((sum, r) => sum + Number(r.net_payout || r.payout_amount || 0), 0)
-                      return (
-                        <div className="settle-summary" role="region" aria-label="Total payouts due">
-                          <div className="settle-summary-label">Total Payouts Due</div>
-                          <div className="settle-summary-value">₹ {Number(totalDue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
-                        </div>
-                      )
-                    })()}
-                    <div className="settle-row settle-head">
-                      <div>Date</div>
-                      <div>Orders</div>
-                      <div>Total Revenue</div>
-                      <div>Net Payout</div>
-                      <div>Payment Status</div>
-                      <div>Settled At</div>
-                    </div>
-                    {settlements.map(r => (
-                      <div key={r.order_date} className="settle-row">
-                        <div>{new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
-                        <div>{r.orders_count}</div>
-                        <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                        <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
-                        <div>
-                          <button
-                            className={`btn-primary ${r.status === 'settled' ? 'btn-status-settled' : 'btn-status-unsettled'}`}
-                            onClick={async () => {
-                              try {
-                                const dateIso = new Date(r.order_date).toISOString().slice(0,10)
-                                const nextStatus = (r.status === 'settled') ? 'unsettled' : 'settled'
-                                const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENT_PAID(activeCanteen.CanteenId), {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ date: dateIso, status: nextStatus })
-                                })
-                                if (!res.ok) throw new Error('Failed to update status')
-                                const payload = await res.json()
-                                const updated = payload?.payout
-                                setSettlements(prev => prev.map(row => {
-                                  if (row.order_date !== r.order_date) return row
-                                  return {
-                                    ...row,
-                                    status: nextStatus,
-                                    settled_at: nextStatus === 'unsettled' ? null : (updated?.settled_at ?? row.settled_at)
-                                  }
-                                }))
-                              } catch (err) {
-                                console.error('Update payout status error:', err)
-                                alert('Failed to update payout status')
-                              }
-                            }}
-                          >{r.status === 'settled' ? 'Settled' : 'Unsettled'}</button>
-                        </div>
-                        <div>{r.settled_at ? new Date(r.settled_at).toLocaleString('en-IN', { hour12: false }) : '—'}</div>
+              <div className="settle-content">
+                <div className="settle-table">
+                  {(() => {
+                    const totalDue = settlements
+                      .filter(r => (r.status || 'unsettled') !== 'settled')
+                      .reduce((sum, r) => sum + Number(r.net_payout || r.payout_amount || 0), 0)
+                    return (
+                      <div className="settle-summary" role="region" aria-label="Total payouts due">
+                        <div className="settle-summary-label">Total Payouts Due</div>
+                        <div className="settle-summary-value">₹ {Number(totalDue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
                       </div>
-                    ))}
+                    )
+                  })()}
+                  <div className="settle-row settle-head">
+                    <div>S.No.</div>
+                    <div>Date</div>
+                    <div>Orders</div>
+                    <div>Total Revenue</div>
+                    <div>Net Payout</div>
+                    <div>Payment Status</div>
+                    <div>Settled At</div>
                   </div>
+                  {settlements
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((r, index) => (
+                    <div key={r.order_date} className="settle-row">
+                      <div>{(currentPage - 1) * itemsPerPage + index + 1}</div>
+                      <div>{new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                      <div>{r.orders_count}</div>
+                      <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                      <div>
+                        <button
+                          className={`btn-primary ${r.status === 'settled' ? 'btn-status-settled' : 'btn-status-unsettled'}`}
+                          onClick={async () => {
+                            try {
+                              const dateIso = new Date(r.order_date).toISOString().slice(0,10)
+                              const nextStatus = (r.status === 'settled') ? 'unsettled' : 'settled'
+                              const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENT_PAID(activeCanteen.CanteenId), {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ date: dateIso, status: nextStatus })
+                              })
+                              if (!res.ok) throw new Error('Failed to update status')
+                              const payload = await res.json()
+                              const updated = payload?.payout
+                              setSettlements(prev => prev.map(row => {
+                                if (row.order_date !== r.order_date) return row
+                                return {
+                                  ...row,
+                                  status: nextStatus,
+                                  settled_at: nextStatus === 'unsettled' ? null : (updated?.settled_at ?? row.settled_at)
+                                }
+                              }))
+                            } catch (err) {
+                              console.error('Update payout status error:', err)
+                              alert('Failed to update payout status')
+                            }
+                          }}
+                        >{r.status === 'settled' ? 'Settled' : 'Unsettled'}</button>
+                      </div>
+                      <div>{r.settled_at ? new Date(r.settled_at).toLocaleString('en-IN', { hour12: false }) : '—'}</div>
+                    </div>
+                  ))}
+                  
+                  {/* Pagination */}
+                  {settlements.length > itemsPerPage && (
+                    <div className="pagination-container">
+                      <div className="pagination-info">
+                        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, settlements.length)} of {settlements.length} settlements
+                      </div>
+                      <div className="pagination-controls">
+                        <button 
+                          className="pagination-btn"
+                          onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          Previous
+                        </button>
+                        <div className="page-numbers">
+                          {(() => {
+                            const totalPages = Math.ceil(settlements.length / itemsPerPage);
+                            const startPage = Math.max(1, currentPage - 2);
+                            const endPage = Math.min(totalPages, currentPage + 2);
+                            const pages = [];
+                            
+                            for (let i = startPage; i <= endPage; i++) {
+                              pages.push(i);
+                            }
+                            
+                            return pages.map(page => (
+                              <button
+                                key={page}
+                                className={`pagination-btn ${page === currentPage ? 'active' : ''}`}
+                                onClick={() => setCurrentPage(page)}
+                              >
+                                {page}
+                              </button>
+                            ));
+                          })()}
+                        </div>
+                        <button 
+                          className="pagination-btn"
+                          onClick={() => setCurrentPage(prev => Math.min(Math.ceil(settlements.length / itemsPerPage), prev + 1))}
+                          disabled={currentPage === Math.ceil(settlements.length / itemsPerPage)}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="settle-right">
+                
+                <div className="chart-section">
                   <div className="chart-card">
                     <div className="chart-title">Daily Net Payouts</div>
                     {(() => {
