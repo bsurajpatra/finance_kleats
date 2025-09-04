@@ -3,7 +3,7 @@ import './Dashboard.css';
 import logo from '../../assets/logo.png';
 import Transactions from '../transactions/Transactions';
 import Balance from '../balance/Balance';
-import DailyNetProfitReport from '../netProfit/DailyNetProfitReport';
+import Profit from '../profit/Profit';
 import CanteenPaymentManagement from '../canteen/CanteenPaymentManagement';
 
 const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
@@ -48,10 +48,10 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
           Transactions
         </button>
         <button 
-          className={`nav-tab ${activeTab === 'net-profit' ? 'active' : ''}`}
-          onClick={() => onTabChange('net-profit')}
+          className={`nav-tab ${activeTab === 'profit' ? 'active' : ''}`}
+          onClick={() => onTabChange('profit')}
         >
-          Net Profit
+          Profits
         </button>
         <button 
           className={`nav-tab ${activeTab === 'canteen' ? 'active' : ''}`}
@@ -71,8 +71,8 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
           <Transactions />
         )}
 
-        {activeTab === 'net-profit' && (
-          <DailyNetProfitReport />
+        {activeTab === 'profit' && (
+          <Profit />
         )}
 
         {activeTab === 'canteen' && (

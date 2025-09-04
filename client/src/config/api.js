@@ -5,7 +5,7 @@ export const API_ENDPOINTS = {
   HEALTH: `${API_BASE_URL}/health`,
 
   SUMMARY: `${API_BASE_URL}/api/summary`,
-  NET_PROFIT: (canteenId) => `${API_BASE_URL}/api/summary/net-profit/${canteenId}`,
+  PROFIT: (canteenId) => `${API_BASE_URL}/api/summary/profit/${canteenId}`,
   CANTEENS: `${API_BASE_URL}/api/canteens`,
   CANTEEN_SETTLEMENTS: (id) => `${API_BASE_URL}/api/canteens/${id}/settlements`,
   CANTEEN_SETTLEMENT_PAID: (id) => `${API_BASE_URL}/api/canteens/${id}/settlements/paid`,

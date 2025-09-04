@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_ENDPOINTS, authFetch } from '../../config/api.js';
-import './DailyNetProfitReport.css';
+import './Profit.css';
 
 const DailyNetProfitReport = ({ canteenId = null }) => {
   const [netProfitData, setNetProfitData] = useState([]);
@@ -20,7 +20,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
       setError(null);
 
       // Build URL with query parameters
-      let url = API_ENDPOINTS.NET_PROFIT(canteenId || 'all');
+      let url = API_ENDPOINTS.PROFIT(canteenId || 'all');
       const params = new URLSearchParams();
       
       if (startDate) {
@@ -36,14 +36,14 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
 
       const response = await authFetch(url);
       if (!response.ok) {
-        throw new Error('Failed to fetch net profit data');
+        throw new Error('Failed to fetch gross profit data');
       }
       
       const data = await response.json();
       setNetProfitData(data);
     } catch (err) {
-      setError('Failed to load net profit data. Please try again later.');
-      console.error('Error fetching net profit data:', err);
+      setError('Failed to load gross profit data. Please try again later.');
+      console.error('Error fetching gross profit data:', err);
     } finally {
       setLoading(false);
     }
@@ -86,7 +86,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
       <div className="net-profit-container">
         <div className="loading-spinner">
           <div className="spinner"></div>
-          <p>Loading net profit data...</p>
+          <p>Loading gross profit data...</p>
         </div>
       </div>
     );
@@ -108,7 +108,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
   return (
     <div className="net-profit-container">
       <div className="net-profit-header">
-        <h2>Daily Net Profit Report</h2>
+        <h2>Daily Gross Profit Report</h2>
         <div className="header-actions">
           <button 
             className="sort-btn"
@@ -159,7 +159,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
 
       <div className="summary-stats">
         <div className="stat-card">
-          <h3>Total Net Profit</h3>
+          <h3>Total Gross Profit</h3>
           <div className="stat-value">{formatAmount(totalNetProfit)}</div>
         </div>
         <div className="stat-card">
@@ -182,7 +182,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
               <path d="M12 6c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
             </svg>
           </div>
-          <p>No net profit data found for the selected period.</p>
+          <p>No gross profit data found for the selected period.</p>
         </div>
       ) : (
         <div className="table-container">
@@ -190,7 +190,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Net Profit (₹)</th>
+                <th>Gross Profit (₹)</th>
               </tr>
             </thead>
             <tbody>

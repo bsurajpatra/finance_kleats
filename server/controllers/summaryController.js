@@ -24,7 +24,7 @@ export async function getCanteenSummary(req, res) {
   }
 }
 
-export async function getDailyNetProfitController(req, res) {
+export async function getDailyProfitController(req, res) {
   try {
     const { canteenId } = req.params
     const { startDate, endDate } = req.query
@@ -32,8 +32,8 @@ export async function getDailyNetProfitController(req, res) {
     const netProfit = await getDailyNetProfit(canteenId, startDate, endDate)
     res.json(netProfit)
   } catch (err) {
-    console.error('Error fetching daily net profit:', err)
-    res.status(500).json({ error: 'Failed to fetch daily net profit' })
+    console.error('Error fetching daily profit:', err)
+    res.status(500).json({ error: 'Failed to fetch daily profit' })
   }
 }
 
