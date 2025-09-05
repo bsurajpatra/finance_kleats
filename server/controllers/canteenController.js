@@ -1,6 +1,7 @@
 import { getAllCanteens } from '../models/canteenModel.js'
 import { getDailyRevenueByCanteen } from '../models/ordersModel.js'
 import { upsertPayoutRecord, getPayoutsMapByCanteen, setPayoutStatus, getPayoutByKey } from '../models/payoutsModel.js'
+import { createTransaction } from '../models/transactionModel.js'
 
 export async function fetchCanteens(req, res) {
   try {
@@ -53,15 +54,38 @@ export async function setPayoutPaid(req, res) {
     const { date, status } = req.body || {}
     if (!id) return res.status(400).json({ error: 'CanteenId is required' })
     if (!date) return res.status(400).json({ error: 'date is required (YYYY-MM-DD)' })
+    
     try {
       const normalized = status === 'settled' ? 'settled' : 'unsettled'
       await setPayoutStatus({ canteenId: Number(id), payoutDate: date, status: normalized })
       const updated = await getPayoutByKey({ canteenId: Number(id), payoutDate: date })
+      
+      // If settling a payout, create a debit transaction
+      if (normalized === 'settled' && updated) {
+        try {
+          // Get canteen name for transaction description
+          const canteens = await getAllCanteens()
+          const canteen = canteens.find(c => c.CanteenId === Number(id))
+          const canteenName = canteen ? canteen.CanteenName : `Canteen ${id}`
+          
+          await createTransaction({
+            date: date,
+            description: `Canteen Payout - ${canteenName} (${date})`,
+            transaction_type: 'debit',
+            amount: updated.amount || 0
+          })
+          
+          console.log(`Created debit transaction for canteen ${id} payout on ${date}: ₹${updated.amount}`)
+        } catch (transactionErr) {
+          console.error('Error creating settlement transaction:', transactionErr)
+          // Don't fail the settlement if transaction creation fails
+        }
+      }
+      
       return res.json({ success: true, payout: updated })
     } catch (err) {
       return res.status(400).json({ error: 'payouts table missing or schema mismatch', details: err.message })
     }
-    res.json({ success: true })
   } catch (err) {
     console.error('Error marking payout paid:', err)
     res.status(500).json({ error: 'Failed to update payout status', details: err.message })
