@@ -25,6 +25,17 @@ class CashfreeService {
         }
       };
 
+      console.log('Cashfree API Request:', {
+        url,
+        requestBody,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-version': this.apiVersion,
+          'x-client-id': this.clientId,
+          'x-client-secret': '***'
+        }
+      });
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -37,7 +48,9 @@ class CashfreeService {
       });
 
       if (!response.ok) {
-        throw new Error(`Cashfree API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('Cashfree API Error Response:', errorText);
+        throw new Error(`Cashfree API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const data = await response.json();

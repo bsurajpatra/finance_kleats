@@ -140,6 +140,62 @@
   background: #c53030;
 }
 
+/* Export Dropdown */
+.export-dropdown-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+
+.export-btn {
+  background: #f3f4f6;
+  color: #333;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.4rem 1.1rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.export-btn:hover {
+  background: #e6f7ff;
+}
+
+.export-dropdown {
+  position: absolute;
+  top: 110%;
+  right: 0;
+  min-width: 200px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  z-index: 10;
+  padding: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.export-option {
+  background: none;
+  border: none;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.export-option:hover {
+  background: #f8f9fa;
+}
+
 /* Error and Loading States */
 .error-message {
   background: #f8d7da;
@@ -186,7 +242,7 @@
 
 .table-header {
   display: grid;
-  grid-template-columns: 0.7fr 1fr 1fr;
+  grid-template-columns: 0.3fr 0.7fr 1fr 1fr 1.1fr;
   gap: 8px;
   padding: 12px;
   background: #fafafa;
@@ -198,7 +254,7 @@
 
 .table-row {
   display: grid;
-  grid-template-columns: 0.7fr 1fr 1fr;
+  grid-template-columns: 0.3fr 0.7fr 1fr 1fr 1.1fr;
   gap: 8px;
   padding: 12px;
   border: 1px solid #f0f0f0;
@@ -207,13 +263,19 @@
   align-items: center;
 }
 
+.col-sno { text-align: center; font-weight: 600; }
 .col-amount { text-align: left; }
 .col-from, .col-till { white-space: nowrap; text-align: left; }
 
-/* Ensure all table cells are left-aligned */
+/* Ensure all table cells are left-aligned except S.No. */
 .table-header > div,
 .table-row > div {
   text-align: left;
+}
+
+.table-header .col-sno,
+.table-row .col-sno {
+  text-align: center;
 }
 
 .table-row:hover {
@@ -318,5 +380,21 @@
   
   .table-header > div:before {
     content: attr(data-label);
+  }
+  
+  .col-sno:before {
+    content: "S.No.: ";
+  }
+  .col-amount:before {
+    content: "Amount Settled: ";
+  }
+  .col-from:before {
+    content: "Payment From: ";
+  }
+  .col-till:before {
+    content: "Payment Till: ";
+  }
+  .col-settled:before {
+    content: "Settled At: ";
   }
 }

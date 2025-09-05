@@ -1,4 +1,5 @@
-import { getAllTransactions, createTransaction, updateTransaction, deleteTransaction, getTransactionById, getTransactionsByDateRange, getTransactionsByType } from '../models/transactionModel.js'
+import { getAllTransactions, createTransaction, updateTransaction, deleteTransaction, getTransactionById, getTransactionsByDateRange, getTransactionsByType, createSettlementTransaction } from '../models/transactionModel.js'
+import cashfreeService from '../services/cashfreeService.js'
 
 export async function fetchTransactions(req, res) {
   try {
@@ -135,5 +136,97 @@ export async function getTransactionsByTypeController(req, res) {
   } catch (err) {
     console.error('Error fetching transactions by type:', err);
     res.status(500).json({ error: 'Failed to fetch transactions', details: err.message });
+  }
+}
+
+export async function syncSettlementsToTransactions(req, res) {
+  try {
+    const { days = 7 } = req.query; // Default to last 7 days
+    
+    // Calculate date range
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - parseInt(days));
+    
+    const filters = {
+      start_date: startDate.toISOString().split('T')[0] + 'T00:00:00Z',
+      end_date: endDate.toISOString().split('T')[0] + 'T23:59:59Z'
+    };
+    
+    console.log('Syncing settlements for date range:', filters);
+    
+    // Fetch settlements from Cashfree
+    const settlements = await cashfreeService.fetchAllSettlements(filters);
+    const items = Array.isArray(settlements) ? settlements : [];
+    
+    console.log('Fetched settlements count:', items.length);
+    if (items.length > 0) {
+      console.log('First settlement sample:', JSON.stringify(items[0], null, 2));
+    }
+    
+    const results = {
+      processed: 0,
+      added: 0,
+      skipped: 0,
+      errors: []
+    };
+    
+    // Process each settlement
+    for (const item of items) {
+      try {
+        const details = item?.settlement_details || {};
+        const settlementDate = details.settlement_date;
+        const amount = details.amount_settled;
+        const utr = details.utr;
+        
+        console.log('Processing settlement:', { settlementDate, amount, utr });
+        
+        // Skip if essential data is missing
+        if (!settlementDate || !amount || !utr) {
+          console.log('Skipping settlement due to missing data:', { settlementDate, amount, utr });
+          results.skipped++;
+          continue;
+        }
+        
+        // Convert settlement date to YYYY-MM-DD format
+        const formattedDate = settlementDate.split('T')[0];
+        
+        const settlementData = {
+          settlementDate: formattedDate,
+          amount: parseFloat(amount),
+          utr: utr
+        };
+        
+        const result = await createSettlementTransaction(settlementData);
+        
+        if (result.success) {
+          results.added++;
+        } else {
+          results.skipped++;
+        }
+        
+        results.processed++;
+      } catch (error) {
+        console.error('Error processing settlement:', error);
+        results.errors.push({
+          settlement: item,
+          error: error.message
+        });
+        results.skipped++;
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: `Settlement sync completed. Processed: ${results.processed}, Added: ${results.added}, Skipped: ${results.skipped}`,
+      results
+    });
+    
+  } catch (err) {
+    console.error('Error syncing settlements to transactions:', err);
+    res.status(500).json({ 
+      error: 'Failed to sync settlements', 
+      details: err.message 
+    });
   }
 } 

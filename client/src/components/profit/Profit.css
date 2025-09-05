@@ -168,6 +168,12 @@
   letter-spacing: 0.5px;
 }
 
+.net-profit-table th:first-child,
+.net-profit-table td:first-child {
+  text-align: center;
+  width: 80px;
+}
+
 .net-profit-table td {
   padding: 1rem;
   border-bottom: 1px solid #f0f0f0;
@@ -175,6 +181,12 @@
 }
 
 .profit-row:hover {
+  background: #f8f9fa;
+}
+
+.sno-cell {
+  font-weight: 600;
+  color: #666;
   background: #f8f9fa;
 }
 

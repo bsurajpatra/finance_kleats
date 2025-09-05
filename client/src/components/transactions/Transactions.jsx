@@ -60,6 +60,7 @@ const Transactions = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [transactionsPerPage] = useState(20);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [isSyncingSettlements, setIsSyncingSettlements] = useState(false);
 
   const filterRef = useRef(null);
   const [descPopup, setDescPopup] = useState({ open: false, text: '', title: '' });
@@ -577,6 +578,39 @@ const Transactions = () => {
     setModalData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleSyncSettlements = async () => {
+    try {
+      setIsSyncingSettlements(true);
+      const token = localStorage.getItem('token');
+      
+      const response = await fetch(`${API_ENDPOINTS.TRANSACTIONS}/sync-settlements?days=30`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to sync settlements');
+      }
+      
+      const result = await response.json();
+      
+      // Refresh transactions to show new settlements
+      await fetchTransactions();
+      
+      alert(`Settlement sync completed!\n\nProcessed: ${result.results.processed}\nAdded: ${result.results.added}\nSkipped: ${result.results.skipped}`);
+      
+    } catch (err) {
+      console.error('Error syncing settlements:', err);
+      alert(`Failed to sync settlements: ${err.message}`);
+    } finally {
+      setIsSyncingSettlements(false);
+    }
+  };
+
   const handleAddTransaction = async (e) => {
     e.preventDefault();
     setModalError('');
@@ -678,6 +712,14 @@ const Transactions = () => {
               Delete Selected ({selectedTransactions.length})
             </button>
           )}
+          <button
+            className="transactions-sync-btn"
+            onClick={handleSyncSettlements}
+            disabled={isSyncingSettlements}
+            style={{ marginRight: '1rem' }}
+          >
+            {isSyncingSettlements ? 'Syncing...' : 'Sync Settlements'}
+          </button>
           <button
             className="transactions-new-btn"
             onClick={() => setShowModal(true)}

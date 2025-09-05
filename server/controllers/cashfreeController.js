@@ -17,10 +17,17 @@ export async function fetchCashfreeSettlements(req, res) {
     const items = Array.isArray(settlements?.data) ? settlements.data : [];
     const mapped = items.map((item) => {
       const details = item?.settlement_details || {};
+      // Use settlement_date from settlement_details as the primary date
+      const settlementDate = details.settlement_date || null;
+      const settlementInitiated = details.settlement_initiated_on || null;
+
       return {
         amount_settled: details.amount_settled ?? null,
         payment_from: details.payment_from ?? null,
         payment_till: details.payment_till ?? null,
+        transfer_time: settlementDate,
+        settled_at: settlementInitiated,
+        transfer_utr: details.utr ?? null,
       };
     });
 
@@ -50,10 +57,17 @@ export async function fetchAllCashfreeSettlements(req, res) {
 
     const mapped = (Array.isArray(settlements) ? settlements : []).map((item) => {
       const details = item?.settlement_details || {};
+      // Use settlement_date from settlement_details as the primary date
+      const settlementDate = details.settlement_date || null;
+      const settlementInitiated = details.settlement_initiated_on || null;
+
       return {
         amount_settled: details.amount_settled ?? null,
         payment_from: details.payment_from ?? null,
         payment_till: details.payment_till ?? null,
+        transfer_time: settlementDate,
+        settled_at: settlementInitiated,
+        transfer_utr: details.utr ?? null,
       };
     });
     
@@ -88,10 +102,17 @@ export async function getSettlementsByDateRange(req, res) {
 
     const mapped = (Array.isArray(settlements) ? settlements : []).map((item) => {
       const details = item?.settlement_details || {};
+      // Use settlement_date from settlement_details as the primary date
+      const settlementDate = details.settlement_date || null;
+      const settlementInitiated = details.settlement_initiated_on || null;
+
       return {
         amount_settled: details.amount_settled ?? null,
         payment_from: details.payment_from ?? null,
         payment_till: details.payment_till ?? null,
+        transfer_time: settlementDate,
+        settled_at: settlementInitiated,
+        transfer_utr: details.utr ?? null,
       };
     });
 

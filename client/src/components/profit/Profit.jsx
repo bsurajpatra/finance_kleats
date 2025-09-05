@@ -222,6 +222,7 @@ const Profit = ({ canteenId = null }) => {
           <table className="net-profit-table">
             <thead>
               <tr>
+                <th>S.No.</th>
                 <th>Date</th>
                 <th>Gross Profit (₹)</th>
               </tr>
@@ -229,6 +230,9 @@ const Profit = ({ canteenId = null }) => {
             <tbody>
               {sortedData.map((item, index) => (
                 <tr key={`${item.order_date}-${index}`} className="profit-row">
+                  <td className="sno-cell">
+                    {index + 1}
+                  </td>
                   <td className="date-cell">
                     {formatDate(item.order_date)}
                   </td>

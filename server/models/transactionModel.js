@@ -95,3 +95,39 @@ export async function getTransactionsByType(transaction_type) {
   
   return rows
 }
+
+export async function checkSettlementExists(settlementDate, amount, utr) {
+  const [rows] = await pool.query(
+    `SELECT * FROM financial_transactions 
+     WHERE description LIKE ? AND amount = ? AND date = ?`,
+    [`%${utr}%`, amount, settlementDate]
+  )
+  
+  return rows.length > 0
+}
+
+export async function createSettlementTransaction(settlementData) {
+  const { settlementDate, amount, utr } = settlementData
+  
+  // Check if settlement already exists
+  const exists = await checkSettlementExists(settlementDate, amount, utr)
+  if (exists) {
+    return { success: false, message: 'Settlement already exists in transactions' }
+  }
+  
+  const description = `Cashfree Settlement - UTR: ${utr}`
+  const transaction_type = 'credit'
+  
+  const [result] = await pool.query(
+    `INSERT INTO financial_transactions (date, description, transaction_type, amount)
+     VALUES (?, ?, ?, ?)`,
+    [settlementDate, description, transaction_type, amount]
+  )
+  
+  const [newTransaction] = await pool.query(
+    'SELECT * FROM financial_transactions WHERE id = ?',
+    [result.insertId]
+  )
+  
+  return { success: true, transaction: newTransaction[0] }
+}
