@@ -9,10 +9,26 @@ const Profit = ({ canteenId = null }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest first
+  const [showFilter, setShowFilter] = useState(false);
+  const filterRef = React.useRef(null);
 
   useEffect(() => {
     fetchGrossProfitData();
   }, [canteenId, startDate, endDate]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setShowFilter(false);
+      }
+    }
+    if (showFilter) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFilter]);
 
   const fetchGrossProfitData = async () => {
     try {
@@ -110,12 +126,56 @@ const Profit = ({ canteenId = null }) => {
       <div className="net-profit-header">
         <h2>Daily Gross Profit Report</h2>
         <div className="header-actions">
-          <button 
-            className="sort-btn"
-            onClick={handleSortToggle}
-          >
-            Sort by Date {sortOrder === 'desc' ? '↓' : '↑'}
-          </button>
+          <div className="transactions-filter-dropdown-wrapper" ref={filterRef}>
+            <button
+              className="transactions-filter-btn"
+              onClick={() => setShowFilter(prev => !prev)}
+            >
+              Filter ▼
+            </button>
+            {showFilter && (
+              <div className="transactions-filter-dropdown">
+                <div className="filter-section">
+                  <label>
+                    Sort by:
+                    <select
+                      value={sortOrder}
+                      onChange={e => setSortOrder(e.target.value)}
+                      style={{ marginLeft: '0.5rem', marginRight: '1rem' }}
+                    >
+                      <option value="desc">Descending date</option>
+                      <option value="asc">Ascending date</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="filter-section">
+                  <label>
+                    Period:
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={e => setStartDate(e.target.value)}
+                      style={{ marginLeft: '0.5rem' }}
+                    />
+                    <span style={{ margin: '0 0.5rem' }}>to</span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={e => setEndDate(e.target.value)}
+                    />
+                  </label>
+                </div>
+                <div className="filter-section">
+                  <button
+                    className="clear-filters-btn"
+                    onClick={handleClearFilters}
+                  >
+                    Clear Filters
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           <button 
             className="net-profit-refresh-btn"
             onClick={fetchGrossProfitData}
@@ -128,34 +188,7 @@ const Profit = ({ canteenId = null }) => {
         </div>
       </div>
 
-      <div className="filters-section">
-        <div className="date-filters">
-          <div className="filter-group">
-            <label htmlFor="startDate">Start Date:</label>
-            <input
-              type="date"
-              id="startDate"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </div>
-          <div className="filter-group">
-            <label htmlFor="endDate">End Date:</label>
-            <input
-              type="date"
-              id="endDate"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </div>
-          <button 
-            className="clear-filters-btn"
-            onClick={handleClearFilters}
-          >
-            Clear Filters
-          </button>
-        </div>
-      </div>
+      {/* Filters moved to header dropdown; removed inline filters-section */}
 
       <div className="summary-stats">
         <div className="stat-card">
@@ -206,6 +239,85 @@ const Profit = ({ canteenId = null }) => {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Charts Section */}
+      {sortedData.length > 0 && (
+        <div className="profit-charts">
+          {/* Daily chart */}
+          <div className="chart-card">
+            <div className="chart-title">Daily Gross Profit</div>
+            {(() => {
+              const chartData = sortedData
+                .slice()
+                .sort((a,b) => new Date(a.order_date) - new Date(b.order_date))
+                .map(r => ({
+                  label: new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+                  value: Number(r.gross_profit || 0)
+                }));
+              const maxVal = Math.max(1, ...chartData.map(d => Math.abs(d.value)));
+              return (
+                <div className="bars">
+                  {chartData.map((d, idx) => {
+                    const raw = Math.abs(Number(d.value ?? 0));
+                    const pct = Math.round((raw / maxVal) * 100);
+                    const heightPct = Math.max(2, pct); // ensure at least a small bar even for zero
+                    return (
+                      <div key={idx} className="bar">
+                        <div
+                          className={`bar-fill ${d.value >= 0 ? 'bar-positive' : 'bar-negative'}`}
+                          style={{ height: `${heightPct}%` }}
+                          title={`${formatAmount(d.value)}`}
+                        />
+                        <div className="bar-label">{d.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Monthly chart */}
+          <div className="chart-card">
+            <div className="chart-title">Monthly Gross Profit</div>
+            {(() => {
+              const monthMap = new Map();
+              for (const r of sortedData) {
+                const dt = new Date(r.order_date);
+                const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+                const prev = monthMap.get(key) || 0;
+                monthMap.set(key, prev + Number(r.gross_profit || 0));
+              }
+              const chartData = Array.from(monthMap.entries())
+                .sort((a,b) => new Date(a[0]+'-01') - new Date(b[0]+'-01'))
+                .map(([key, sum]) => ({
+                  label: new Date(key+'-01').toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
+                  value: Number(sum || 0)
+                }));
+              const maxVal = Math.max(1, ...chartData.map(d => Math.abs(d.value)));
+              return (
+                <div className="bars">
+                  {chartData.map((d, idx) => {
+                    const raw = Math.abs(Number(d.value ?? 0));
+                    const pct = Math.round((raw / maxVal) * 100);
+                    const heightPct = Math.max(2, pct);
+                    return (
+                      <div key={idx} className="bar">
+                        <div
+                          className={`bar-fill ${d.value >= 0 ? 'bar-positive' : 'bar-negative'}`}
+                          style={{ height: `${heightPct}%` }}
+                          title={`${formatAmount(d.value)}`}
+                        />
+                        <div className="bar-label">{d.label}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
         </div>
       )}
     </div>

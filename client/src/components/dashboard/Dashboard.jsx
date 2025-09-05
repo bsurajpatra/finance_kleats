@@ -5,6 +5,7 @@ import Transactions from '../transactions/Transactions';
 import Balance from '../balance/Balance';
 import Profit from '../profit/Profit';
 import CanteenPaymentManagement from '../canteen/CanteenPaymentManagement';
+import CashfreeSettlements from '../cashfree/CashfreeSettlements.jsx';
 
 const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
   const [navHidden, setNavHidden] = useState(false);
@@ -59,10 +60,19 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
         >
           Payments
         </button>
+        <button 
+          className={`nav-tab ${activeTab === 'settlements' ? 'active' : ''}`}
+          onClick={() => onTabChange('settlements')}
+        >
+          Settlements
+        </button>
       </nav>
       )}
 
       <main className="dashboard-main">
+        {activeTab === 'settlements' && (
+          <CashfreeSettlements />
+        )}
         {activeTab === 'balance' && (
           <Balance />
         )}

@@ -9,6 +9,11 @@ export const API_ENDPOINTS = {
   CANTEENS: `${API_BASE_URL}/api/canteens`,
   CANTEEN_SETTLEMENTS: (id) => `${API_BASE_URL}/api/canteens/${id}/settlements`,
   CANTEEN_SETTLEMENT_PAID: (id) => `${API_BASE_URL}/api/canteens/${id}/settlements/paid`,
+  
+  // Cashfree API endpoints
+  CASHFREE_SETTLEMENTS: `${API_BASE_URL}/api/cashfree/settlements`,
+  CASHFREE_SETTLEMENTS_ALL: `${API_BASE_URL}/api/cashfree/settlements/all`,
+  CASHFREE_SETTLEMENTS_BY_DATE: (startDate, endDate) => `${API_BASE_URL}/api/cashfree/settlements/${startDate}/${endDate}`,
 };
 
 export default API_BASE_URL;
