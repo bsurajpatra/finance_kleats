@@ -1,6 +1,6 @@
 import { getAllTransactions } from '../models/transactionModel.js'
 import { getDailyRevenueByCanteen } from '../models/ordersModel.js'
-import { getDailyNetProfit } from '../models/ordersModel.js'
+import { getDailyGrossProfit } from '../models/ordersModel.js'
 
 export async function fetchSummary(req, res) {
   try {
@@ -29,8 +29,10 @@ export async function getDailyProfitController(req, res) {
     const { canteenId } = req.params
     const { startDate, endDate } = req.query
     
-    const netProfit = await getDailyNetProfit(canteenId, startDate, endDate)
-    res.json(netProfit)
+    // Convert 'all' to null for the model function
+    const actualCanteenId = canteenId === 'all' ? null : canteenId
+    const grossProfit = await getDailyGrossProfit(actualCanteenId, startDate, endDate)
+    res.json(grossProfit)
   } catch (err) {
     console.error('Error fetching daily profit:', err)
     res.status(500).json({ error: 'Failed to fetch daily profit' })

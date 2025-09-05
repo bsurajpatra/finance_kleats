@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { API_ENDPOINTS, authFetch } from '../../config/api.js';
 import './Profit.css';
 
-const DailyNetProfitReport = ({ canteenId = null }) => {
-  const [netProfitData, setNetProfitData] = useState([]);
+const Profit = ({ canteenId = null }) => {
+  const [grossProfitData, setGrossProfitData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [startDate, setStartDate] = useState('');
@@ -11,10 +11,10 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest first
 
   useEffect(() => {
-    fetchNetProfitData();
+    fetchGrossProfitData();
   }, [canteenId, startDate, endDate]);
 
-  const fetchNetProfitData = async () => {
+  const fetchGrossProfitData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -40,7 +40,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
       }
       
       const data = await response.json();
-      setNetProfitData(data);
+      setGrossProfitData(data);
     } catch (err) {
       setError('Failed to load gross profit data. Please try again later.');
       console.error('Error fetching gross profit data:', err);
@@ -73,13 +73,13 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
     setEndDate('');
   };
 
-  const sortedData = [...netProfitData].sort((a, b) => {
+  const sortedData = [...grossProfitData].sort((a, b) => {
     const dateA = new Date(a.order_date);
     const dateB = new Date(b.order_date);
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
   });
 
-  const totalNetProfit = sortedData.reduce((sum, item) => sum + Number(item.net_profit), 0);
+  const totalGrossProfit = sortedData.reduce((sum, item) => sum + Number(item.gross_profit), 0);
 
   if (loading) {
     return (
@@ -97,7 +97,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
       <div className="net-profit-container">
         <div className="error-message">
           <p>{error}</p>
-          <button onClick={fetchNetProfitData} className="retry-btn">
+          <button onClick={fetchGrossProfitData} className="retry-btn">
             Retry
           </button>
         </div>
@@ -118,7 +118,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
           </button>
           <button 
             className="net-profit-refresh-btn"
-            onClick={fetchNetProfitData}
+            onClick={fetchGrossProfitData}
             title="Refresh data"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -160,7 +160,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
       <div className="summary-stats">
         <div className="stat-card">
           <h3>Total Gross Profit</h3>
-          <div className="stat-value">{formatAmount(totalNetProfit)}</div>
+          <div className="stat-value">{formatAmount(totalGrossProfit)}</div>
         </div>
         <div className="stat-card">
           <h3>Days with Data</h3>
@@ -169,7 +169,7 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
         <div className="stat-card">
           <h3>Average Daily Profit</h3>
           <div className="stat-value">
-            {sortedData.length > 0 ? formatAmount(totalNetProfit / sortedData.length) : formatAmount(0)}
+            {sortedData.length > 0 ? formatAmount(totalGrossProfit / sortedData.length) : formatAmount(0)}
           </div>
         </div>
       </div>
@@ -199,8 +199,8 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
                   <td className="date-cell">
                     {formatDate(item.order_date)}
                   </td>
-                  <td className={`profit-cell ${Number(item.net_profit) >= 0 ? 'positive' : 'negative'}`}>
-                    {formatAmount(item.net_profit)}
+                  <td className={`profit-cell ${Number(item.gross_profit) >= 0 ? 'positive' : 'negative'}`}>
+                    {formatAmount(item.gross_profit)}
                   </td>
                 </tr>
               ))}
@@ -212,4 +212,4 @@ const DailyNetProfitReport = ({ canteenId = null }) => {
   );
 };
 
-export default DailyNetProfitReport;
+export default Profit;

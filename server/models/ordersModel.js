@@ -33,22 +33,25 @@ export async function getDailyRevenueByCanteen(canteenId) {
   return rows
 }
 
-export async function getDailyNetProfit(canteenId, startDate = null, endDate = null) {
-  let whereClause = 'WHERE paymentStatus = "DELIVERED"'
+export async function getDailyGrossProfit(canteenId, startDate = null, endDate = null) {
+  let whereClause = 'WHERE paymentStatus = "DELIVERED" AND status = "delivered"'
   let params = []
   
   if (canteenId) {
     whereClause += ' AND canteenId = ?'
     params.push(canteenId)
   }
-  
+
   if (startDate) {
-    whereClause += ' AND DATE(orderTime) >= ?'
+    whereClause += ' AND orderTime >= ?'
     params.push(startDate)
+  } else {
+    whereClause += ' AND orderTime >= ?'
+    params.push("2025-08-25 00:00:00")
   }
   
   if (endDate) {
-    whereClause += ' AND DATE(orderTime) <= ?'
+    whereClause += ' AND orderTime <= ?'
     params.push(endDate)
   }
   
@@ -56,15 +59,16 @@ export async function getDailyNetProfit(canteenId, startDate = null, endDate = n
     `SELECT 
         DATE(orderTime) AS order_date,
         ROUND(COALESCE(SUM(
-          CASE 
-            WHEN JSON_VALID(coupons) AND JSON_LENGTH(coupons) > 0 THEN order_subtotal * 0.005
-            ELSE order_subtotal * 0.035
+          (order_subtotal * 0.05) +
+          CASE
+            WHEN JSON_VALID(coupons) AND JSON_SEARCH(coupons, 'one', 'GLUG') IS NULL
+            THEN order_subtotal * 0.03
+            ELSE 0
           END
-        ), 0), 2) AS net_profit
+        ), 0), 2) AS gross_profit
      FROM (
         SELECT 
           orderTime,
-          paymentStatus,
           coupons,
           (
             (SELECT SUM(
@@ -85,3 +89,4 @@ export async function getDailyNetProfit(canteenId, startDate = null, endDate = n
   )
   return rows
 }
+
