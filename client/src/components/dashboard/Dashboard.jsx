@@ -51,7 +51,7 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
           className={`nav-tab ${activeTab === 'profit' ? 'active' : ''}`}
           onClick={() => onTabChange('profit')}
         >
-          Profits
+          Gross Profits
         </button>
         <button 
           className={`nav-tab ${activeTab === 'canteen' ? 'active' : ''}`}

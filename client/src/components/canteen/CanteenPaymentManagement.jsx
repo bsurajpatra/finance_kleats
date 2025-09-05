@@ -159,6 +159,7 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                     <div>Date</div>
                     <div>Orders</div>
                     <div>Total Revenue</div>
+                    <div>Total Orders</div>
                     <div>Net Payout</div>
                     <div>Payment Status</div>
                     <div>Settled At</div>
@@ -171,6 +172,7 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                       <div>{new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                       <div>{r.orders_count}</div>
                       <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                      <div>₹ {Number(r.total_orders || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
                       <div>
                         <button

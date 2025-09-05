@@ -4,13 +4,22 @@ export async function getDailyRevenueByCanteen(canteenId) {
   const [rows] = await pool.query(
     `SELECT 
         DATE(orderTime) AS order_date,
-        COALESCE(SUM(order_subtotal), 0) AS total_revenue,
+        COALESCE(SUM(order_subtotal), 0) AS total_orders,
+        CEIL(COALESCE(SUM(
+          order_subtotal + 
+          CASE
+            WHEN JSON_VALID(coupons) AND JSON_SEARCH(coupons, 'one', 'GLUG') IS NULL
+            THEN order_subtotal * 0.03
+            ELSE 0
+          END
+        ), 0)) AS total_revenue,
         COUNT(*) AS orders_count,
         FLOOR(COALESCE(SUM(order_subtotal * 0.95), 0)) AS net_payout
     FROM (
         SELECT 
           orderTime,
           paymentStatus,
+          coupons,
           (
             (SELECT SUM(
                 CAST(JSON_UNQUOTE(JSON_EXTRACT(item, '$.price')) AS DECIMAL(10,2)) *
