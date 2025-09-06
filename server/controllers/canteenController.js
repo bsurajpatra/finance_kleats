@@ -19,17 +19,7 @@ export async function fetchCanteenSettlements(req, res) {
     if (!id) return res.status(400).json({ error: 'CanteenId is required' })
     const rows = await getDailyRevenueByCanteen(id)
     
-    // First, upsert all payout amounts
-    for (const r of rows) {
-      const orderDate = new Date(r.order_date)
-      const ymd = orderDate.toISOString().slice(0,10)
-      const amountInt = Number(r.net_payout || 0)
-      try {
-        await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
-      } catch (_) {}
-    }
-    
-    // Then fetch the updated payout map with all statuses
+    // Get existing payout map first to avoid unnecessary upserts
     let payoutMap = new Map()
     try {
       payoutMap = await getPayoutsMapByCanteen(id)
@@ -37,7 +27,41 @@ export async function fetchCanteenSettlements(req, res) {
       payoutMap = new Map()
     }
     
-    // Finally, enrich the data with the correct statuses
+    // Only upsert payout records for dates that don't exist yet
+    for (const r of rows) {
+      const orderDate = new Date(r.order_date)
+      const ymd = orderDate.toISOString().slice(0,10)
+      const amountInt = Number(r.net_payout || 0)
+      
+      // Check if payout record already exists
+      const existing = payoutMap.get(ymd)
+      if (!existing) {
+        // Only create new records for dates that don't exist
+        try {
+          await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
+          console.log(`Created new payout record for canteen ${id}, date ${ymd}, amount ₹${amountInt}`)
+        } catch (err) {
+          console.error(`Failed to create payout record for ${ymd}:`, err.message)
+        }
+      } else if (existing.amount !== amountInt) {
+        // Update amount if it has changed (e.g., new orders came in)
+        try {
+          await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
+          console.log(`Updated payout amount for canteen ${id}, date ${ymd}, from ₹${existing.amount} to ₹${amountInt}`)
+        } catch (err) {
+          console.error(`Failed to update payout record for ${ymd}:`, err.message)
+        }
+      }
+    }
+    
+    // Fetch the updated payout map after any changes
+    try {
+      payoutMap = await getPayoutsMapByCanteen(id)
+    } catch (_) {
+      payoutMap = new Map()
+    }
+    
+    // Enrich the data with the correct statuses
     const enriched = []
     for (const r of rows) {
       const orderDate = new Date(r.order_date)
