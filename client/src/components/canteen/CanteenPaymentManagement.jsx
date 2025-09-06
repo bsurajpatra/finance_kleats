@@ -205,7 +205,10 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                                     settlementDate: settlementDate
                                   })
                                 })
-                                if (!res.ok) throw new Error('Failed to update status')
+                                if (!res.ok) {
+                                  const errorData = await res.json()
+                                  throw new Error(errorData.message || 'Failed to update status')
+                                }
                                 const payload = await res.json()
                                 const updated = payload?.payout
                                 setSettlements(prev => prev.map(row => {
@@ -216,9 +219,20 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                                     settled_at: updated?.settled_at ?? row.settled_at
                                   }
                                 }))
+                                
+                                // Refetch settlements to ensure data consistency
+                                try {
+                                  const refreshRes = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENTS(activeCanteen.CanteenId));
+                                  if (refreshRes.ok) {
+                                    const refreshData = await refreshRes.json();
+                                    setSettlements(Array.isArray(refreshData) ? refreshData : []);
+                                  }
+                                } catch (refreshErr) {
+                                  console.warn('Failed to refresh settlements after settlement:', refreshErr);
+                                }
                               } catch (err) {
                                 console.error('Update payout status error:', err)
-                                alert('Failed to update payout status')
+                                alert(`Failed to update payout status: ${err.message}`)
                               }
                             }}
                             title="Click to mark as settled"

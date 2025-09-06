@@ -27,7 +27,8 @@ export async function fetchCanteenSettlements(req, res) {
       payoutMap = new Map()
     }
     
-    // Only upsert payout records for dates that don't exist yet
+    // Only update existing settled records if amounts have changed
+    // Do NOT create new unsettled records - they should be calculated on-the-fly
     for (const r of rows) {
       const orderDate = new Date(r.order_date)
       const ymd = orderDate.toISOString().slice(0,10)
@@ -35,23 +36,16 @@ export async function fetchCanteenSettlements(req, res) {
       
       // Check if payout record already exists
       const existing = payoutMap.get(ymd)
-      if (!existing) {
-        // Only create new records for dates that don't exist
+      if (existing && existing.status === 'settled' && existing.amount !== amountInt) {
+        // Only update amount for existing settled records if it has changed
         try {
           await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
-          console.log(`Created new payout record for canteen ${id}, date ${ymd}, amount ₹${amountInt}`)
+          console.log(`Updated settled payout amount for canteen ${id}, date ${ymd}, from ₹${existing.amount} to ₹${amountInt}`)
         } catch (err) {
-          console.error(`Failed to create payout record for ${ymd}:`, err.message)
-        }
-      } else if (existing.amount !== amountInt) {
-        // Update amount if it has changed (e.g., new orders came in)
-        try {
-          await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
-          console.log(`Updated payout amount for canteen ${id}, date ${ymd}, from ₹${existing.amount} to ₹${amountInt}`)
-        } catch (err) {
-          console.error(`Failed to update payout record for ${ymd}:`, err.message)
+          console.error(`Failed to update settled payout record for ${ymd}:`, err.message)
         }
       }
+      // Note: We don't create new unsettled records here - they're calculated on-the-fly
     }
     
     // Fetch the updated payout map after any changes
@@ -92,6 +86,15 @@ export async function setPayoutPaid(req, res) {
     try {
       // Check current status before making changes
       const currentPayout = await getPayoutByKey({ canteenId: Number(id), payoutDate: date })
+      
+      // Prevent settling if already settled
+      if (currentPayout && currentPayout.status === 'settled') {
+        return res.status(400).json({ 
+          error: 'Payout already settled',
+          message: 'This payout has already been settled and cannot be settled again',
+          payout: currentPayout
+        })
+      }
       
       // Prevent unsettling if already settled
       if (currentPayout && currentPayout.status === 'settled' && status === 'unsettled') {
