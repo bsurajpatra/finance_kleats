@@ -228,20 +228,105 @@
   margin-bottom: 8px;
 }
 
+.chart-container {
+  display: flex;
+  align-items: stretch;
+  height: 280px;
+  position: relative;
+}
+
+.y-axis {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: space-between;
+  height: 100%;
+  margin-right: 8px;
+  min-width: 60px;
+  padding-bottom: 20px;
+}
+
+.y-tick {
+  display: flex;
+  align-items: center;
+  height: 0;
+  position: relative;
+}
+
+.y-tick-label {
+  font-size: 0.75rem;
+  color: #666;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+.y-tick-line {
+  width: 100%;
+  height: 1px;
+  background-color: #e0e0e0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
 .bars {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
-  align-items: end;
+  align-items: flex-end;
   gap: 10px;
-  height: 260px;
+  height: 100%;
+  flex: 1;
+  position: relative;
+  padding-bottom: 20px;
 }
 
-.bar { display: flex; flex-direction: column; align-items: center; }
-.bar-fill { width: 100%; border-radius: 6px 6px 0 0; min-height: 2px; }
+.bars::before {
+  content: '';
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #e0e0e0;
+  z-index: 1;
+}
+
+.bar { 
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  position: relative;
+  justify-content: flex-end;
+  height: 100%;
+  padding-bottom: 20px;
+}
+
+.bar-fill { 
+  width: 100%; 
+  border-radius: 6px 6px 0 0; 
+  min-height: 2px; 
+  transition: all 0.2s ease;
+}
+
+.bar-fill:hover {
+  opacity: 0.8;
+  transform: scaleY(1.05);
+}
+
 .bar-positive { background: linear-gradient(180deg, #82c91e, #2f9e44); }
 .bar-negative { background: linear-gradient(180deg, #e03131, #c92a2a); }
-.bar-label { margin-top: 6px; font-size: 0.85rem; color: #666; }
+.bar-label { 
+  position: absolute;
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.85rem; 
+  color: #666; 
+  text-align: center;
+  font-weight: 500;
+  white-space: nowrap;
+}
 
 .no-data {
   text-align: center;
@@ -365,6 +450,14 @@
     padding: 0.75rem 0.5rem;
     font-size: 0.85rem;
   }
+  
+  .y-tick-label {
+    font-size: 0.7rem;
+  }
+  
+  .y-axis {
+    min-width: 50px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -398,5 +491,17 @@
   .net-profit-table td {
     padding: 0.6rem 0.4rem;
     font-size: 0.8rem;
+  }
+  
+  .y-tick-label {
+    font-size: 0.65rem;
+  }
+  
+  .y-axis {
+    min-width: 45px;
+  }
+  
+  .chart-container {
+    height: 240px;
   }
 }

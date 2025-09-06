@@ -260,24 +260,43 @@ const Profit = ({ canteenId = null }) => {
                   label: new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
                   value: Number(r.gross_profit || 0)
                 }));
+              
+              // Calculate dynamic Y-axis ticks for daily chart (0, 50, 100, 150, 200, 250, 300...)
               const maxVal = Math.max(1, ...chartData.map(d => Math.abs(d.value)));
+              const tickInterval = 50;
+              const maxTick = Math.ceil(maxVal / tickInterval) * tickInterval;
+              const yAxisTicks = [];
+              for (let i = 0; i <= maxTick; i += tickInterval) {
+                yAxisTicks.push(i);
+              }
+              
               return (
-                <div className="bars">
-                  {chartData.map((d, idx) => {
-                    const raw = Math.abs(Number(d.value ?? 0));
-                    const pct = Math.round((raw / maxVal) * 100);
-                    const heightPct = Math.max(2, pct); // ensure at least a small bar even for zero
-                    return (
-                      <div key={idx} className="bar">
-                        <div
-                          className={`bar-fill ${d.value >= 0 ? 'bar-positive' : 'bar-negative'}`}
-                          style={{ height: `${heightPct}%` }}
-                          title={`${formatAmount(d.value)}`}
-                        />
-                        <div className="bar-label">{d.label}</div>
+                <div className="chart-container">
+                  <div className="y-axis">
+                    {yAxisTicks.map((tick, idx) => (
+                      <div key={idx} className="y-tick">
+                        <span className="y-tick-label">₹{tick}</span>
+                        <div className="y-tick-line"></div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
+                  <div className="bars">
+                    {chartData.map((d, idx) => {
+                      const raw = Math.abs(Number(d.value ?? 0));
+                      const pct = Math.round((raw / maxTick) * 100);
+                      const heightPct = Math.max(2, pct); // ensure at least a small bar even for zero
+                      return (
+                        <div key={idx} className="bar">
+                          <div
+                            className={`bar-fill ${d.value >= 0 ? 'bar-positive' : 'bar-negative'}`}
+                            style={{ height: `${heightPct}%` }}
+                            title={`${formatAmount(d.value)}`}
+                          />
+                          <div className="bar-label">{d.label}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })()}
@@ -300,24 +319,43 @@ const Profit = ({ canteenId = null }) => {
                   label: new Date(key+'-01').toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
                   value: Number(sum || 0)
                 }));
+              
+              // Calculate dynamic Y-axis ticks for monthly chart (0, 200, 400, 600, 800, 1000...)
               const maxVal = Math.max(1, ...chartData.map(d => Math.abs(d.value)));
+              const tickInterval = 200;
+              const maxTick = Math.ceil(maxVal / tickInterval) * tickInterval;
+              const yAxisTicks = [];
+              for (let i = 0; i <= maxTick; i += tickInterval) {
+                yAxisTicks.push(i);
+              }
+              
               return (
-                <div className="bars">
-                  {chartData.map((d, idx) => {
-                    const raw = Math.abs(Number(d.value ?? 0));
-                    const pct = Math.round((raw / maxVal) * 100);
-                    const heightPct = Math.max(2, pct);
-                    return (
-                      <div key={idx} className="bar">
-                        <div
-                          className={`bar-fill ${d.value >= 0 ? 'bar-positive' : 'bar-negative'}`}
-                          style={{ height: `${heightPct}%` }}
-                          title={`${formatAmount(d.value)}`}
-                        />
-                        <div className="bar-label">{d.label}</div>
+                <div className="chart-container">
+                  <div className="y-axis">
+                    {yAxisTicks.map((tick, idx) => (
+                      <div key={idx} className="y-tick">
+                        <span className="y-tick-label">₹{tick}</span>
+                        <div className="y-tick-line"></div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
+                  <div className="bars">
+                    {chartData.map((d, idx) => {
+                      const raw = Math.abs(Number(d.value ?? 0));
+                      const pct = Math.round((raw / maxTick) * 100);
+                      const heightPct = Math.max(2, pct);
+                      return (
+                        <div key={idx} className="bar">
+                          <div
+                            className={`bar-fill ${d.value >= 0 ? 'bar-positive' : 'bar-negative'}`}
+                            style={{ height: `${heightPct}%` }}
+                            title={`${formatAmount(d.value)}`}
+                          />
+                          <div className="bar-label">{d.label}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })()}

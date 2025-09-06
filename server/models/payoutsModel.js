@@ -1,36 +1,45 @@
 import { pool } from '../db/mysql.js'
 
 export async function upsertPayoutRecord({ canteenId, payoutDate, amount }) {
-  // Try update first (avoids duplicates even if unique key missing). If no row, insert.
-  const [res] = await pool.query(
-    `UPDATE payouts SET amount = ? WHERE canteenId = ? AND payout_date = ?`,
-    [amount, canteenId, payoutDate]
+  // Use INSERT ... ON DUPLICATE KEY UPDATE for atomic upsert operation
+  // This prevents race conditions and ensures data consistency
+  const [result] = await pool.query(
+    `INSERT INTO payouts (canteenId, payout_date, amount, status) 
+     VALUES (?, ?, ?, 'unsettled')
+     ON DUPLICATE KEY UPDATE 
+     amount = VALUES(amount),
+     updated_at = CURRENT_TIMESTAMP`,
+    [canteenId, payoutDate, amount]
   )
-  if (res.affectedRows === 0) {
-    console.log(`Creating new payout record: Canteen ${canteenId}, Date ${payoutDate}, Amount ₹${amount}`)
-    await pool.query(
-      `INSERT INTO payouts (canteenId, payout_date, amount, status) VALUES (?, ?, ?, 'unsettled')`,
-      [canteenId, payoutDate, amount]
-    )
+  
+  if (result.affectedRows === 1) {
+    console.log(`✅ Created new payout record: Canteen ${canteenId}, Date ${payoutDate}, Amount ₹${amount}`)
+  } else if (result.affectedRows === 2) {
+    console.log(`🔄 Updated existing payout record: Canteen ${canteenId}, Date ${payoutDate}, Amount ₹${amount}`)
   } else {
-    console.log(`Updated existing payout record: Canteen ${canteenId}, Date ${payoutDate}, Amount ₹${amount}`)
+    console.log(`ℹ️ No changes needed: Canteen ${canteenId}, Date ${payoutDate}, Amount ₹${amount}`)
   }
 }
 
 export async function setPayoutStatus({ canteenId, payoutDate, status }) {
   const normalized = status === 'settled' ? 'settled' : 'unsettled'
   const settledAt = normalized === 'settled' ? new Date() : null
-  // Update first; if not found, insert.
-  const [res] = await pool.query(
-    `UPDATE payouts SET status = ?, settled_at = ? WHERE canteenId = ? AND payout_date = ?`,
-    [normalized, settledAt, canteenId, payoutDate]
+  
+  // Use atomic upsert to prevent race conditions
+  const [result] = await pool.query(
+    `INSERT INTO payouts (canteenId, payout_date, amount, status, settled_at) 
+     VALUES (?, ?, 0, ?, ?)
+     ON DUPLICATE KEY UPDATE 
+     status = VALUES(status),
+     settled_at = VALUES(settled_at),
+     updated_at = CURRENT_TIMESTAMP`,
+    [canteenId, payoutDate, normalized, settledAt]
   )
-  if (res.affectedRows === 0) {
-    await pool.query(
-      `INSERT INTO payouts (canteenId, payout_date, amount, status, settled_at)
-       VALUES (?, ?, 0, ?, ?)`,
-      [canteenId, payoutDate, normalized, settledAt]
-    )
+  
+  if (result.affectedRows === 1) {
+    console.log(`✅ Created new payout status: Canteen ${canteenId}, Date ${payoutDate}, Status ${normalized}`)
+  } else if (result.affectedRows === 2) {
+    console.log(`🔄 Updated payout status: Canteen ${canteenId}, Date ${payoutDate}, Status ${normalized}`)
   }
 }
 
