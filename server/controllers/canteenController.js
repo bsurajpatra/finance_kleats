@@ -18,14 +18,8 @@ export async function fetchCanteenSettlements(req, res) {
     const { id } = req.params
     if (!id) return res.status(400).json({ error: 'CanteenId is required' })
     const rows = await getDailyRevenueByCanteen(id)
-    // upsert payout amounts and merge paid status, but don't fail if payouts table absent
-    let payoutMap = new Map()
-    try {
-      payoutMap = await getPayoutsMapByCanteen(id)
-    } catch (_) {
-      payoutMap = new Map()
-    }
-    const enriched = []
+    
+    // First, upsert all payout amounts
     for (const r of rows) {
       const orderDate = new Date(r.order_date)
       const ymd = orderDate.toISOString().slice(0,10)
@@ -33,6 +27,22 @@ export async function fetchCanteenSettlements(req, res) {
       try {
         await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
       } catch (_) {}
+    }
+    
+    // Then fetch the updated payout map with all statuses
+    let payoutMap = new Map()
+    try {
+      payoutMap = await getPayoutsMapByCanteen(id)
+    } catch (_) {
+      payoutMap = new Map()
+    }
+    
+    // Finally, enrich the data with the correct statuses
+    const enriched = []
+    for (const r of rows) {
+      const orderDate = new Date(r.order_date)
+      const ymd = orderDate.toISOString().slice(0,10)
+      const amountInt = Number(r.net_payout || 0)
       const existing = payoutMap.get(ymd)
       enriched.push({
         ...r,
@@ -51,7 +61,7 @@ export async function fetchCanteenSettlements(req, res) {
 export async function setPayoutPaid(req, res) {
   try {
     const { id } = req.params
-    const { date, status } = req.body || {}
+    const { date, status, settlementDate } = req.body || {}
     if (!id) return res.status(400).json({ error: 'CanteenId is required' })
     if (!date) return res.status(400).json({ error: 'date is required (YYYY-MM-DD)' })
     
@@ -68,14 +78,17 @@ export async function setPayoutPaid(req, res) {
           const canteen = canteens.find(c => c.CanteenId === Number(id))
           const canteenName = canteen ? canteen.CanteenName : `Canteen ${id}`
           
+          // Use settlement date if provided, otherwise use current date
+          const transactionDate = settlementDate || new Date().toISOString().split('T')[0]
+          
           await createTransaction({
-            date: date,
+            date: transactionDate,
             description: `Canteen Payout - ${canteenName} (${date})`,
             transaction_type: 'debit',
             amount: updated.amount || 0
           })
           
-          console.log(`Created debit transaction for canteen ${id} payout on ${date}: ₹${updated.amount}`)
+          console.log(`Created debit transaction for canteen ${id} payout on ${date}, settled on ${transactionDate}: ₹${updated.amount}`)
         } catch (transactionErr) {
           console.error('Error creating settlement transaction:', transactionErr)
           // Don't fail the settlement if transaction creation fails

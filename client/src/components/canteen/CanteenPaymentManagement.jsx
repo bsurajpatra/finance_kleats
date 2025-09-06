@@ -67,6 +67,7 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
   const [settleLoading, setSettleLoading] = useState(false);
   const [settleError, setSettleError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [chartKey, setChartKey] = useState(0); // Force chart re-render
   const itemsPerPage = 20;
 
   const openSettlements = async (canteen) => {
@@ -122,6 +123,13 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canteens]);
+
+  // Force chart re-render when settlements change
+  useEffect(() => {
+    if (settlements.length > 0) {
+      setChartKey(prev => prev + 1);
+    }
+  }, [settlements]);
 
   return (
     <div className="canteen-container">
@@ -181,10 +189,16 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                             try {
                               const dateIso = new Date(r.order_date).toISOString().slice(0,10)
                               const nextStatus = (r.status === 'settled') ? 'unsettled' : 'settled'
+                              const settlementDate = new Date().toISOString().slice(0,10) // Current date for settlement
+                              
                               const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENT_PAID(activeCanteen.CanteenId), {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ date: dateIso, status: nextStatus })
+                                body: JSON.stringify({ 
+                                  date: dateIso, 
+                                  status: nextStatus,
+                                  settlementDate: nextStatus === 'settled' ? settlementDate : undefined
+                                })
                               })
                               if (!res.ok) throw new Error('Failed to update status')
                               const payload = await res.json()
@@ -256,7 +270,7 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                   )}
                 </div>
                 
-                <div className="chart-section">
+                <div className="chart-section" key={chartKey}>
                   <div className="chart-card">
                     <div className="chart-title">Daily Net Payouts</div>
                     {(() => {
@@ -270,22 +284,54 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                             dateLabel: new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
                             value: amount,
                             settled: isSettled,
+                            orderDate: r.order_date, // Add original date for stable key
                           }
                         })
-                      const maxVal = Math.max(1, ...data.map(d => d.value))
-                      return (
-                        <div className="bars">
-                          {data.map((d, idx) => {
-                            const heightPct = Math.round((d.value / maxVal) * 100)
-                            return (
-                              <div key={idx} className="bar">
-                                <div className={`bar-fill ${d.settled ? 'bar-fill-settled' : 'bar-fill-unsettled'}`} style={{ height: `${heightPct}%` }} title={`₹ ${d.value.toLocaleString('en-IN')}`}></div>
-                                <div className="bar-label">{d.dateLabel}</div>
+                        const maxVal = Math.max(1, ...data.map(d => d.value))
+                        const maxRange = Math.ceil(maxVal / 500) * 500 // Round up to nearest 500
+                        const yAxisSteps = Math.ceil(maxRange / 500) // Number of 500 increments
+                        
+                        return (
+                          <div className="horizontal-chart">
+                            {/* Y-axis labels (amount range) */}
+                            <div className="y-axis-labels">
+                              {Array.from({ length: yAxisSteps + 1 }, (_, i) => (
+                                <div key={i} className="y-axis-label">
+                                  ₹{((yAxisSteps - i) * 500).toLocaleString('en-IN')}
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Chart area */}
+                            <div className="chart-area">
+                              {/* Y-axis grid lines */}
+                              <div className="y-axis-grid">
+                                {Array.from({ length: yAxisSteps + 1 }, (_, i) => (
+                                  <div key={i} className="grid-line" style={{ bottom: `${((yAxisSteps - i) / yAxisSteps) * 100}%` }}></div>
+                                ))}
                               </div>
-                            )
-                          })}
-                        </div>
-                      )
+                              
+                              {/* Data bars */}
+                              <div className="horizontal-bars">
+                                {data.map((d) => {
+                                  const heightPct = Math.round((d.value / maxRange) * 100)
+                                  return (
+                                    <div key={d.orderDate} className="horizontal-bar">
+                                      <div className="date-label">{d.dateLabel}</div>
+                                      <div className="bar-container">
+                                        <div 
+                                          className={`horizontal-bar-fill ${d.settled ? 'bar-fill-settled' : 'bar-fill-unsettled'}`} 
+                                          style={{ height: `${heightPct}%` }} 
+                                          title={`₹ ${d.value.toLocaleString('en-IN')} - ${d.settled ? 'Settled' : 'Unsettled'}`}
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        )
                     })()}
                   </div>
                 </div>

@@ -8,7 +8,7 @@ export async function upsertPayoutRecord({ canteenId, payoutDate, amount }) {
   )
   if (res.affectedRows === 0) {
     await pool.query(
-      `INSERT INTO payouts (canteenId, payout_date, amount) VALUES (?, ?, ?)`,
+      `INSERT INTO payouts (canteenId, payout_date, amount, status) VALUES (?, ?, ?, 'unsettled')`,
       [canteenId, payoutDate, amount]
     )
   }
