@@ -1,7 +1,7 @@
 import { getAllCanteens } from '../models/canteenModel.js'
 import { getDailyRevenueByCanteen } from '../models/ordersModel.js'
 import { upsertPayoutRecord, getPayoutsMapByCanteen, setPayoutStatus, getPayoutByKey } from '../models/payoutsModel.js'
-import { createTransaction } from '../models/transactionModel.js'
+import { createTransaction, checkExistingPayoutTransaction } from '../models/transactionModel.js'
 
 export async function fetchCanteens(req, res) {
   try {
@@ -88,7 +88,7 @@ export async function setPayoutPaid(req, res) {
       await setPayoutStatus({ canteenId: Number(id), payoutDate: date, status: 'settled' })
       const updated = await getPayoutByKey({ canteenId: Number(id), payoutDate: date })
       
-      // Create a debit transaction for the settlement
+      // Create a debit transaction for the settlement (only if not already created)
       if (updated) {
         try {
           // Get canteen name for transaction description
@@ -99,15 +99,26 @@ export async function setPayoutPaid(req, res) {
           // Use settlement date if provided, otherwise use current date
           const transactionDate = settlementDate || new Date().toISOString().split('T')[0]
           
-          await createTransaction({
-            date: transactionDate,
-            description: `Canteen Payout - ${canteenName} (${date})`,
-            transaction_type: 'debit',
-            amount: updated.amount || 0,
-            source: 'canteen_payout'
+          // Check if transaction already exists to prevent duplicates
+          const existingTransaction = await checkExistingPayoutTransaction({
+            canteenId: Number(id),
+            payoutDate: date,
+            amount: updated.amount || 0
           })
           
-          console.log(`Created debit transaction for canteen ${id} payout on ${date}, settled on ${transactionDate}: ₹${updated.amount}`)
+          if (!existingTransaction) {
+            await createTransaction({
+              date: transactionDate,
+              description: `Canteen Payout - ${canteenName} (${date})`,
+              transaction_type: 'debit',
+              amount: updated.amount || 0,
+              source: 'canteen_payout'
+            })
+            
+            console.log(`Created debit transaction for canteen ${id} payout on ${date}, settled on ${transactionDate}: ₹${updated.amount}`)
+          } else {
+            console.log(`Transaction already exists for canteen ${id} payout on ${date}, skipping creation`)
+          }
         } catch (transactionErr) {
           console.error('Error creating settlement transaction:', transactionErr)
           // Don't fail the settlement if transaction creation fails

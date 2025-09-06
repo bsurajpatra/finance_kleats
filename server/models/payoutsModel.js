@@ -7,10 +7,13 @@ export async function upsertPayoutRecord({ canteenId, payoutDate, amount }) {
     [amount, canteenId, payoutDate]
   )
   if (res.affectedRows === 0) {
+    console.log(`Creating new payout record: Canteen ${canteenId}, Date ${payoutDate}, Amount ₹${amount}`)
     await pool.query(
       `INSERT INTO payouts (canteenId, payout_date, amount, status) VALUES (?, ?, ?, 'unsettled')`,
       [canteenId, payoutDate, amount]
     )
+  } else {
+    console.log(`Updated existing payout record: Canteen ${canteenId}, Date ${payoutDate}, Amount ₹${amount}`)
   }
 }
 

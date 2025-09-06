@@ -141,3 +141,18 @@ export function isTransactionDeletable(transaction) {
   // Only manually created transactions are deletable
   return !transaction.source || transaction.source === 'manual'
 }
+
+export async function checkExistingPayoutTransaction({ canteenId, payoutDate, amount }) {
+  // Check if a canteen payout transaction already exists for this canteen, date, and amount
+  // We check for transactions that contain the payout date in the description and match the amount
+  const [rows] = await pool.query(
+    `SELECT * FROM financial_transactions 
+     WHERE source = 'canteen_payout' 
+     AND description LIKE ? 
+     AND amount = ? 
+     AND transaction_type = 'debit'`,
+    [`%(${payoutDate})%`, amount]
+  )
+  
+  return rows.length > 0 ? rows[0] : null
+}
