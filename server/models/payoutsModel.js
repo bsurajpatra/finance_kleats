@@ -21,25 +21,26 @@ export async function upsertPayoutRecord({ canteenId, payoutDate, amount }) {
   }
 }
 
-export async function setPayoutStatus({ canteenId, payoutDate, status }) {
+export async function setPayoutStatus({ canteenId, payoutDate, status, amount }) {
   const normalized = status === 'settled' ? 'settled' : 'unsettled'
   const settledAt = normalized === 'settled' ? new Date() : null
   
   // Use atomic upsert to prevent race conditions
   const [result] = await pool.query(
     `INSERT INTO payouts (canteenId, payout_date, amount, status, settled_at) 
-     VALUES (?, ?, 0, ?, ?)
+     VALUES (?, ?, ?, ?, ?)
      ON DUPLICATE KEY UPDATE 
+     amount = VALUES(amount),
      status = VALUES(status),
      settled_at = VALUES(settled_at),
      updated_at = CURRENT_TIMESTAMP`,
-    [canteenId, payoutDate, normalized, settledAt]
+    [canteenId, payoutDate, amount || 0, normalized, settledAt]
   )
   
   if (result.affectedRows === 1) {
-    console.log(`✅ Created new payout status: Canteen ${canteenId}, Date ${payoutDate}, Status ${normalized}`)
+    console.log(`✅ Created new payout status: Canteen ${canteenId}, Date ${payoutDate}, Amount ₹${amount || 0}, Status ${normalized}`)
   } else if (result.affectedRows === 2) {
-    console.log(`🔄 Updated payout status: Canteen ${canteenId}, Date ${payoutDate}, Status ${normalized}`)
+    console.log(`🔄 Updated payout status: Canteen ${canteenId}, Date ${payoutDate}, Amount ₹${amount || 0}, Status ${normalized}`)
   }
 }
 

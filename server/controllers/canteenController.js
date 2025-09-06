@@ -50,7 +50,7 @@ export async function fetchCanteenSettlements(req, res) {
       const existing = payoutMap.get(ymd)
       enriched.push({
         ...r,
-        payout_amount: amountInt,
+        payout_amount: existing?.status === 'settled' ? existing.amount : amountInt,
         status: existing?.status || 'unsettled',
         settled_at: existing?.settled_at || null
       })
@@ -98,7 +98,17 @@ export async function setPayoutPaid(req, res) {
         })
       }
       
-      await setPayoutStatus({ canteenId: Number(id), payoutDate: date, status: 'settled' })
+      // Get the current payout amount from order data before settling
+      const orderData = await getDailyRevenueByCanteen(id)
+      const orderDate = new Date(date)
+      const ymd = orderDate.toISOString().slice(0,10)
+      const orderPayout = orderData.find(r => {
+        const orderDateStr = new Date(r.order_date).toISOString().slice(0,10)
+        return orderDateStr === ymd
+      })
+      const payoutAmount = orderPayout ? Number(orderPayout.net_payout || 0) : 0
+      
+      await setPayoutStatus({ canteenId: Number(id), payoutDate: date, status: 'settled', amount: payoutAmount })
       const updated = await getPayoutByKey({ canteenId: Number(id), payoutDate: date })
       
       // Create a debit transaction for the settlement (only if not already created)

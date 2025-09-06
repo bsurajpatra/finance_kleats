@@ -177,7 +177,13 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                     .map((r, index) => (
                     <div key={r.order_date} className="settle-row">
                       <div>{(currentPage - 1) * itemsPerPage + index + 1}</div>
-                      <div>{new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                      <div>{(() => {
+                        // Extract date part from ISO string (e.g., "2025-08-25" from "2025-08-25T18:30:00.000Z")
+                        const dateStr = r.order_date.split('T')[0];
+                        const [year, month, day] = dateStr.split('-');
+                        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                        return `${day} ${months[parseInt(month) - 1]} ${year}`;
+                      })()}</div>
                       <div>{r.orders_count}</div>
                       <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       <div>₹ {Number(r.total_orders || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
