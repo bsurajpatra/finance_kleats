@@ -27,26 +27,12 @@ export async function fetchCanteenSettlements(req, res) {
       payoutMap = new Map()
     }
     
-    // Only update existing settled records if amounts have changed
-    // Do NOT create new unsettled records - they should be calculated on-the-fly
-    for (const r of rows) {
-      const orderDate = new Date(r.order_date)
-      const ymd = orderDate.toISOString().slice(0,10)
-      const amountInt = Number(r.net_payout || 0)
-      
-      // Check if payout record already exists
-      const existing = payoutMap.get(ymd)
-      if (existing && existing.status === 'settled' && existing.amount !== amountInt) {
-        // Only update amount for existing settled records if it has changed
-        try {
-          await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
-          console.log(`Updated settled payout amount for canteen ${id}, date ${ymd}, from ₹${existing.amount} to ₹${amountInt}`)
-        } catch (err) {
-          console.error(`Failed to update settled payout record for ${ymd}:`, err.message)
-        }
-      }
-      // Note: We don't create new unsettled records here - they're calculated on-the-fly
-    }
+    // DO NOT update settled records - they represent the amount at time of settlement
+    // Settled amounts should remain fixed once settled
+    // Only calculate unsettled amounts on-the-fly (not stored in database)
+    
+    // Note: We don't create or update any records here - settled records are immutable
+    // and unsettled records are calculated on-the-fly from the order data
     
     // Fetch the updated payout map after any changes
     try {
@@ -166,15 +152,17 @@ export async function syncCanteenPayouts(req, res) {
   try {
     const { id } = req.params
     if (!id) return res.status(400).json({ error: 'CanteenId is required' })
+    
+    // This function should NOT create or update any records
+    // Settled records are immutable, unsettled records are calculated on-the-fly
+    // This endpoint is now just for informational purposes
+    
     const rows = await getDailyRevenueByCanteen(id)
-    for (const r of rows) {
-      const ymd = new Date(r.order_date).toISOString().slice(0,10)
-      const amountInt = Number(r.net_payout || 0)
-      try {
-        await upsertPayoutRecord({ canteenId: Number(id), payoutDate: ymd, amount: amountInt })
-      } catch (_) { /* ignore if payouts table missing */ }
-    }
-    res.json({ success: true, count: rows.length })
+    res.json({ 
+      success: true, 
+      count: rows.length,
+      message: 'Sync completed - no records created/updated (settled records are immutable, unsettled are calculated on-the-fly)'
+    })
   } catch (err) {
     console.error('Error syncing canteen payouts:', err)
     res.status(500).json({ error: 'Failed to sync payouts', details: err.message })
