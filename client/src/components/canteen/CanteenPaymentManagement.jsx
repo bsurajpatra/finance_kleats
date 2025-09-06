@@ -184,8 +184,9 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                       <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
                       <div>
                         {r.status === 'settled' ? (
-                          <div className="btn-status-settled-disabled">
-                            Settled
+                          <div className="btn-status-settled-disabled" title={`Settled on ${r.settled_at ? new Date(r.settled_at).toLocaleDateString('en-IN') : 'Unknown date'}`}>
+                            <span className="status-icon">✅</span>
+                            <span>Settled</span>
                           </div>
                         ) : (
                           <button
@@ -220,7 +221,11 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                                 alert('Failed to update payout status')
                               }
                             }}
-                          >Settle</button>
+                            title="Click to mark as settled"
+                          >
+                            <span className="status-icon">⏳</span>
+                            <span>Settle</span>
+                          </button>
                         )}
                       </div>
                       <div>{r.settled_at ? new Date(r.settled_at).toLocaleString('en-IN', { hour12: false }) : '—'}</div>

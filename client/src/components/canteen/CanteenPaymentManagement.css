@@ -116,6 +116,16 @@
   padding: 10px 14px;
   border-radius: 8px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #d32f2f;
+  transform: translateY(-1px);
 }
 .btn-status-settled { background: #2f9e44; }
 .btn-status-unsettled { background: #e03131; }
@@ -128,10 +138,19 @@
   cursor: not-allowed;
   opacity: 1;
   text-align: center;
-  display: inline-block;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
   font-size: inherit;
   font-weight: inherit;
   min-width: 80px;
+  position: relative;
+}
+
+.status-icon {
+  font-size: 1.1em;
+  line-height: 1;
 }
 .settle-page {
   background: #fff;
