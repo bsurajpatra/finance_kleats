@@ -7,11 +7,11 @@ export async function getAllTransactions() {
   return rows
 }
 
-export async function createTransaction({ date, description, transaction_type, amount }) {
+export async function createTransaction({ date, description, transaction_type, amount, source = 'manual' }) {
   const [result] = await pool.query(
-    `INSERT INTO financial_transactions (date, description, transaction_type, amount)
-     VALUES (?, ?, ?, ?)`,
-    [date, description, transaction_type, amount]
+    `INSERT INTO financial_transactions (date, description, transaction_type, amount, source)
+     VALUES (?, ?, ?, ?, ?)`,
+    [date, description, transaction_type, amount, source]
   )
   
   const [newTransaction] = await pool.query(
@@ -27,7 +27,7 @@ export async function updateTransaction(id, updates) {
   const values = []
   
   for (const [key, value] of Object.entries(updates)) {
-    if (['date', 'description', 'transaction_type', 'amount'].includes(key)) {
+    if (['date', 'description', 'transaction_type', 'amount', 'source'].includes(key)) {
       fields.push(`${key} = ?`)
       values.push(value)
     }
@@ -119,9 +119,9 @@ export async function createSettlementTransaction(settlementData) {
   const transaction_type = 'credit'
   
   const [result] = await pool.query(
-    `INSERT INTO financial_transactions (date, description, transaction_type, amount)
-     VALUES (?, ?, ?, ?)`,
-    [settlementDate, description, transaction_type, amount]
+    `INSERT INTO financial_transactions (date, description, transaction_type, amount, source)
+     VALUES (?, ?, ?, ?, ?)`,
+    [settlementDate, description, transaction_type, amount, 'cashfree_settlement']
   )
   
   const [newTransaction] = await pool.query(
@@ -130,4 +130,14 @@ export async function createSettlementTransaction(settlementData) {
   )
   
   return { success: true, transaction: newTransaction[0] }
+}
+
+export function isTransactionEditable(transaction) {
+  // Only manually created transactions are editable
+  return !transaction.source || transaction.source === 'manual'
+}
+
+export function isTransactionDeletable(transaction) {
+  // Only manually created transactions are deletable
+  return !transaction.source || transaction.source === 'manual'
 }

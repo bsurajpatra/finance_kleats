@@ -119,6 +119,20 @@
 }
 .btn-status-settled { background: #2f9e44; }
 .btn-status-unsettled { background: #e03131; }
+.btn-status-settled-disabled {
+  background: #2f9e44;
+  border: none;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: not-allowed;
+  opacity: 1;
+  text-align: center;
+  display: inline-block;
+  font-size: inherit;
+  font-weight: inherit;
+  min-width: 80px;
+}
 .settle-page {
   background: #fff;
   border-radius: 12px;
@@ -153,7 +167,7 @@
 
 .settle-page-content {
   padding: 1rem;
-  overflow: auto;
+  overflow: visible;
   flex: 1;
 }
 

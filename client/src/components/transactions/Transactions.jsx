@@ -183,7 +183,22 @@ const Transactions = () => {
     }).format(amount || 0);
   };
 
+  const isTransactionEditable = (transaction) => {
+    // Only manually created transactions are editable
+    return !transaction.source || transaction.source === 'manual';
+  };
+
+  const isTransactionDeletable = (transaction) => {
+    // Only manually created transactions are deletable
+    return !transaction.source || transaction.source === 'manual';
+  };
+
   const handleCellDoubleClick = (rowId, field, value) => {
+    const transaction = transactions.find(tx => tx.id === rowId);
+    if (!isTransactionEditable(transaction)) {
+      alert('Cannot edit system-generated transactions');
+      return;
+    }
     setEditingCell({ rowId, field, value });
     setEditValue(value);
   };
@@ -244,6 +259,10 @@ const Transactions = () => {
   };
 
   const handleDeleteClick = (transaction) => {
+    if (!isTransactionDeletable(transaction)) {
+      alert('Cannot delete system-generated transactions');
+      return;
+    }
     setTransactionToDelete(transaction);
     setShowDeleteModal(true);
   };
@@ -293,13 +312,19 @@ const Transactions = () => {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedTransactions(filteredTransactions.map(tx => tx.id));
+      const deletableTransactions = filteredTransactions.filter(tx => isTransactionDeletable(tx));
+      setSelectedTransactions(deletableTransactions.map(tx => tx.id));
     } else {
       setSelectedTransactions([]);
     }
   };
 
   const handleSelectTransaction = (transactionId) => {
+    const transaction = transactions.find(tx => tx.id === transactionId);
+    if (!isTransactionDeletable(transaction)) {
+      alert('Cannot select system-generated transactions for deletion');
+      return;
+    }
     setSelectedTransactions(prev => {
       if (prev.includes(transactionId)) {
         return prev.filter(id => id !== transactionId);
@@ -999,19 +1024,21 @@ const Transactions = () => {
                 
                 return (
                   <React.Fragment key={transaction.id}>
-                    <tr className={`transaction-row ${transaction.transaction_type} ${isPending ? 'pending-transaction' : ''}`}>
+                    <tr className={`transaction-row ${transaction.transaction_type} ${isPending ? 'pending-transaction' : ''} ${!isTransactionEditable(transaction) ? 'system-transaction' : ''}`}>
                       <td className="checkbox-cell">
                         <input 
                           type="checkbox" 
                           checked={selectedTransactions.includes(transaction.id)}
                           onChange={() => handleSelectTransaction(transaction.id)}
-                          disabled={isPending}
+                          disabled={isPending || !isTransactionDeletable(transaction)}
+                          title={!isTransactionDeletable(transaction) ? 'System-generated transactions cannot be deleted' : ''}
                         />
                       </td>
                       <td className="serial-number">{indexOfFirstTransaction + index + 1}</td>
                       <td 
-                        className="editable-cell"
-                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'date', transaction.date)}
+                        className={isTransactionEditable(transaction) ? "editable-cell" : ""}
+                        onDoubleClick={() => !isPending && isTransactionEditable(transaction) && handleCellDoubleClick(transaction.id, 'date', transaction.date)}
+                        title={!isTransactionEditable(transaction) ? 'System-generated transactions cannot be edited' : ''}
                       >
                         {isEditing && editingCell?.field === 'date' ? (
                           <input
@@ -1028,12 +1055,13 @@ const Transactions = () => {
                         )}
                       </td>
                       <td 
-                        className="editable-cell description"
-                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'description', transaction.description || '')}
+                        className={`${isTransactionEditable(transaction) ? "editable-cell" : ""} description`}
+                        onDoubleClick={() => !isPending && isTransactionEditable(transaction) && handleCellDoubleClick(transaction.id, 'description', transaction.description || '')}
                         onTouchStart={(e) => handleDescriptionTouchStart(transaction.description || 'N/A', e, 'Description')}
                         onTouchMove={handleDescriptionTouchMove}
                         onTouchEnd={handleDescriptionTouchEnd}
                         onContextMenu={(e) => e.preventDefault()}
+                        title={!isTransactionEditable(transaction) ? 'System-generated transactions cannot be edited' : ''}
                       >
                         {isEditing && editingCell?.field === 'description' ? (
                           <input
@@ -1049,8 +1077,9 @@ const Transactions = () => {
                         )}
                       </td>
                       <td 
-                        className={`transaction-type ${transaction.transaction_type}`}
-                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'transaction_type', transaction.transaction_type)}
+                        className={`transaction-type ${transaction.transaction_type} ${isTransactionEditable(transaction) ? "editable-cell" : ""}`}
+                        onDoubleClick={() => !isPending && isTransactionEditable(transaction) && handleCellDoubleClick(transaction.id, 'transaction_type', transaction.transaction_type)}
+                        title={!isTransactionEditable(transaction) ? 'System-generated transactions cannot be edited' : ''}
                       >
                         {isEditing && editingCell?.field === 'transaction_type' ? (
                           <select
@@ -1068,8 +1097,9 @@ const Transactions = () => {
                         )}
                       </td>
                       <td 
-                        className={`amount ${transaction.transaction_type} editable-cell`}
-                        onDoubleClick={() => !isPending && handleCellDoubleClick(transaction.id, 'amount', transaction.amount || 0)}
+                        className={`amount ${transaction.transaction_type} ${isTransactionEditable(transaction) ? "editable-cell" : ""}`}
+                        onDoubleClick={() => !isPending && isTransactionEditable(transaction) && handleCellDoubleClick(transaction.id, 'amount', transaction.amount || 0)}
+                        title={!isTransactionEditable(transaction) ? 'System-generated transactions cannot be edited' : ''}
                       >
                         {isEditing && editingCell?.field === 'amount' ? (
                           <input

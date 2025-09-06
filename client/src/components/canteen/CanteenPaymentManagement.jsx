@@ -183,40 +183,45 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                       <div>₹ {Number(r.total_orders || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                       <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
                       <div>
-                        <button
-                          className={`btn-primary ${r.status === 'settled' ? 'btn-status-settled' : 'btn-status-unsettled'}`}
-                          onClick={async () => {
-                            try {
-                              const dateIso = new Date(r.order_date).toISOString().slice(0,10)
-                              const nextStatus = (r.status === 'settled') ? 'unsettled' : 'settled'
-                              const settlementDate = new Date().toISOString().slice(0,10) // Current date for settlement
-                              
-                              const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENT_PAID(activeCanteen.CanteenId), {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                  date: dateIso, 
-                                  status: nextStatus,
-                                  settlementDate: nextStatus === 'settled' ? settlementDate : undefined
+                        {r.status === 'settled' ? (
+                          <div className="btn-status-settled-disabled">
+                            Settled
+                          </div>
+                        ) : (
+                          <button
+                            className="btn-primary btn-status-unsettled"
+                            onClick={async () => {
+                              try {
+                                const dateIso = new Date(r.order_date).toISOString().slice(0,10)
+                                const settlementDate = new Date().toISOString().slice(0,10) // Current date for settlement
+                                
+                                const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENT_PAID(activeCanteen.CanteenId), {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ 
+                                    date: dateIso, 
+                                    status: 'settled',
+                                    settlementDate: settlementDate
+                                  })
                                 })
-                              })
-                              if (!res.ok) throw new Error('Failed to update status')
-                              const payload = await res.json()
-                              const updated = payload?.payout
-                              setSettlements(prev => prev.map(row => {
-                                if (row.order_date !== r.order_date) return row
-                                return {
-                                  ...row,
-                                  status: nextStatus,
-                                  settled_at: nextStatus === 'unsettled' ? null : (updated?.settled_at ?? row.settled_at)
-                                }
-                              }))
-                            } catch (err) {
-                              console.error('Update payout status error:', err)
-                              alert('Failed to update payout status')
-                            }
-                          }}
-                        >{r.status === 'settled' ? 'Settled' : 'Unsettled'}</button>
+                                if (!res.ok) throw new Error('Failed to update status')
+                                const payload = await res.json()
+                                const updated = payload?.payout
+                                setSettlements(prev => prev.map(row => {
+                                  if (row.order_date !== r.order_date) return row
+                                  return {
+                                    ...row,
+                                    status: 'settled',
+                                    settled_at: updated?.settled_at ?? row.settled_at
+                                  }
+                                }))
+                              } catch (err) {
+                                console.error('Update payout status error:', err)
+                                alert('Failed to update payout status')
+                              }
+                            }}
+                          >Settle</button>
+                        )}
                       </div>
                       <div>{r.settled_at ? new Date(r.settled_at).toLocaleString('en-IN', { hour12: false }) : '—'}</div>
                     </div>

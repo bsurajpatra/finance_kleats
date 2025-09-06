@@ -111,6 +111,7 @@
   color: #444;
   font-size: 0.95rem;
   text-align: left;
+  cursor: default;
 }
 
 .transactions-table tr:hover {
@@ -156,6 +157,26 @@
 .transaction-row.debit:hover .serial-number {
   background: #fff0f0;
   color: #b71c1c;
+}
+
+/* System transaction styling */
+.transaction-row.system-transaction {
+  background: #f8f9fa;
+  opacity: 0.8;
+}
+
+.transaction-row.system-transaction:hover {
+  background: #e9ecef;
+}
+
+.transaction-row.system-transaction .serial-number {
+  background: #f8f9fa;
+  color: #6c757d;
+}
+
+.transaction-row.system-transaction:hover .serial-number {
+  background: #e9ecef;
+  color: #495057;
 }
 
 .serial-number {
@@ -607,11 +628,7 @@
 } 
 
 .editable-cell {
-  cursor: pointer;
   position: relative;
-}
-.editable-cell:hover {
-  background-color: #f0f8ff;
 }
 .edit-input {
   width: 100%;

@@ -1,4 +1,4 @@
-import { getAllTransactions, createTransaction, updateTransaction, deleteTransaction, getTransactionById, getTransactionsByDateRange, getTransactionsByType, createSettlementTransaction } from '../models/transactionModel.js'
+import { getAllTransactions, createTransaction, updateTransaction, deleteTransaction, getTransactionById, getTransactionsByDateRange, getTransactionsByType, createSettlementTransaction, isTransactionEditable, isTransactionDeletable } from '../models/transactionModel.js'
 import cashfreeService from '../services/cashfreeService.js'
 
 export async function fetchTransactions(req, res) {
@@ -54,6 +54,19 @@ export async function updateTransactionController(req, res) {
     
     console.log('Updating transaction:', id, 'with:', updates);
     
+    // Check if transaction exists and is editable
+    const existingTransaction = await getTransactionById(id);
+    if (!existingTransaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+    
+    if (!isTransactionEditable(existingTransaction)) {
+      return res.status(403).json({ 
+        error: 'Cannot edit system-generated transaction',
+        message: 'Only manually created transactions can be edited'
+      });
+    }
+    
     // Validate transaction_type if it's being updated
     if (updates.transaction_type && updates.transaction_type !== 'credit' && updates.transaction_type !== 'debit') {
       return res.status(400).json({ error: 'Invalid transaction type. Must be "credit" or "debit"' });
@@ -79,6 +92,19 @@ export async function deleteTransactionController(req, res) {
     const { id } = req.params;
     
     console.log('Deleting transaction:', id);
+    
+    // Check if transaction exists and is deletable
+    const existingTransaction = await getTransactionById(id);
+    if (!existingTransaction) {
+      return res.status(404).json({ error: 'Transaction not found' });
+    }
+    
+    if (!isTransactionDeletable(existingTransaction)) {
+      return res.status(403).json({ 
+        error: 'Cannot delete system-generated transaction',
+        message: 'Only manually created transactions can be deleted'
+      });
+    }
     
     await deleteTransaction(id);
     console.log('Transaction deleted successfully');

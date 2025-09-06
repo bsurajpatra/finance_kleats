@@ -66,12 +66,30 @@ export async function setPayoutPaid(req, res) {
     if (!date) return res.status(400).json({ error: 'date is required (YYYY-MM-DD)' })
     
     try {
-      const normalized = status === 'settled' ? 'settled' : 'unsettled'
-      await setPayoutStatus({ canteenId: Number(id), payoutDate: date, status: normalized })
+      // Check current status before making changes
+      const currentPayout = await getPayoutByKey({ canteenId: Number(id), payoutDate: date })
+      
+      // Prevent unsettling if already settled
+      if (currentPayout && currentPayout.status === 'settled' && status === 'unsettled') {
+        return res.status(400).json({ 
+          error: 'Cannot unsettle an already settled payout',
+          message: 'Once a payout is settled, it cannot be reversed'
+        })
+      }
+      
+      // Only allow settling (not unsettling)
+      if (status !== 'settled') {
+        return res.status(400).json({ 
+          error: 'Invalid operation',
+          message: 'Only settling payouts is allowed'
+        })
+      }
+      
+      await setPayoutStatus({ canteenId: Number(id), payoutDate: date, status: 'settled' })
       const updated = await getPayoutByKey({ canteenId: Number(id), payoutDate: date })
       
-      // If settling a payout, create a debit transaction
-      if (normalized === 'settled' && updated) {
+      // Create a debit transaction for the settlement
+      if (updated) {
         try {
           // Get canteen name for transaction description
           const canteens = await getAllCanteens()
@@ -85,7 +103,8 @@ export async function setPayoutPaid(req, res) {
             date: transactionDate,
             description: `Canteen Payout - ${canteenName} (${date})`,
             transaction_type: 'debit',
-            amount: updated.amount || 0
+            amount: updated.amount || 0,
+            source: 'canteen_payout'
           })
           
           console.log(`Created debit transaction for canteen ${id} payout on ${date}, settled on ${transactionDate}: ₹${updated.amount}`)
