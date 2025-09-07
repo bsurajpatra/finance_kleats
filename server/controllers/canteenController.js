@@ -44,8 +44,8 @@ export async function fetchCanteenSettlements(req, res) {
     // Enrich the data with the correct statuses
     const enriched = []
     for (const r of rows) {
-      const orderDate = new Date(r.order_date)
-      const ymd = orderDate.toISOString().slice(0,10)
+      // Use the order_date directly as it's already in YYYY-MM-DD format from DATE_FORMAT
+      const ymd = r.order_date
       const amountInt = Number(r.net_payout || 0)
       const existing = payoutMap.get(ymd)
       enriched.push({
@@ -100,12 +100,9 @@ export async function setPayoutPaid(req, res) {
       
       // Get the current payout amount from order data before settling
       const orderData = await getDailyRevenueByCanteen(id)
-      const orderDate = new Date(date)
-      const ymd = orderDate.toISOString().slice(0,10)
-      const orderPayout = orderData.find(r => {
-        const orderDateStr = new Date(r.order_date).toISOString().slice(0,10)
-        return orderDateStr === ymd
-      })
+      // Use the date directly as it's already in YYYY-MM-DD format
+      const ymd = date
+      const orderPayout = orderData.find(r => r.order_date === ymd)
       const payoutAmount = orderPayout ? Number(orderPayout.net_payout || 0) : 0
       
       await setPayoutStatus({ canteenId: Number(id), payoutDate: date, status: 'settled', amount: payoutAmount })

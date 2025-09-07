@@ -3,7 +3,7 @@ import { pool } from '../db/mysql.js'
 export async function getDailyRevenueByCanteen(canteenId) {
   const [rows] = await pool.query(
     `SELECT 
-        DATE(orderTime) AS order_date,
+        DATE_FORMAT(orderTime, '%Y-%m-%d') AS order_date,
         COALESCE(SUM(order_subtotal), 0) AS total_orders,
         CEIL(COALESCE(SUM(
           order_subtotal + 
@@ -35,7 +35,7 @@ export async function getDailyRevenueByCanteen(canteenId) {
           AND paymentStatus IN ('DELIVERED')
           AND orderTime >= '2025-08-25 00:00:00'
     ) o
-    GROUP BY DATE(orderTime)
+    GROUP BY DATE_FORMAT(orderTime, '%Y-%m-%d')
     ORDER BY order_date DESC`,
     [canteenId]
   )
@@ -66,7 +66,7 @@ export async function getDailyGrossProfit(canteenId, startDate = null, endDate =
   
   const [rows] = await pool.query(
     `SELECT 
-        DATE(orderTime) AS order_date,
+        DATE_FORMAT(orderTime, '%Y-%m-%d') AS order_date,
         ROUND(COALESCE(SUM(
           (order_subtotal * 0.05) +
           CASE
@@ -92,7 +92,7 @@ export async function getDailyGrossProfit(canteenId, startDate = null, endDate =
         FROM orders
         ${whereClause}
      ) o
-     GROUP BY DATE(orderTime)
+     GROUP BY DATE_FORMAT(orderTime, '%Y-%m-%d')
      ORDER BY order_date DESC`,
     params
   )

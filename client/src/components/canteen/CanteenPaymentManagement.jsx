@@ -178,9 +178,8 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                     <div key={r.order_date} className="settle-row">
                       <div>{(currentPage - 1) * itemsPerPage + index + 1}</div>
                       <div>{(() => {
-                        // Extract date part from ISO string (e.g., "2025-08-25" from "2025-08-25T18:30:00.000Z")
-                        const dateStr = r.order_date.split('T')[0];
-                        const [year, month, day] = dateStr.split('-');
+                        // order_date is already in YYYY-MM-DD format from the backend
+                        const [year, month, day] = r.order_date.split('-');
                         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                         return `${day} ${months[parseInt(month) - 1]} ${year}`;
                       })()}</div>
@@ -199,7 +198,8 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                             className="btn-primary btn-status-unsettled"
                             onClick={async () => {
                               try {
-                                const dateIso = new Date(r.order_date).toISOString().slice(0,10)
+                                // order_date is already in YYYY-MM-DD format
+                                const dateIso = r.order_date
                                 const settlementDate = new Date().toISOString().slice(0,10) // Current date for settlement
                                 
                                 const res = await authFetch(API_ENDPOINTS.CANTEEN_SETTLEMENT_PAID(activeCanteen.CanteenId), {
