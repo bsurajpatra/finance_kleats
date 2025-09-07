@@ -78,7 +78,9 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
     endDate: ''
   });
   const [showFilter, setShowFilter] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const filterRef = React.useRef(null);
+  const exportRef = React.useRef(null);
 
   const openSettlements = async (canteen) => {
     try {
@@ -193,6 +195,172 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
            filters.endDate !== '';
   };
 
+  // Export functions
+  const exportToCSV = () => {
+    const filteredSettlements = getFilteredSettlements();
+    if (filteredSettlements.length === 0) return;
+    
+    const headers = [
+      'S.No.',
+      'Date',
+      'Orders Count',
+      'Total Revenue',
+      'Total Orders',
+      'Net Payout',
+      'Status',
+      'Settled At'
+    ];
+    
+    const rows = filteredSettlements.map((settlement, index) => [
+      index + 1,
+      settlement.order_date,
+      settlement.orders_count || 0,
+      Number(settlement.total_revenue || 0).toFixed(2),
+      Number(settlement.total_orders || 0).toFixed(2),
+      Number(settlement.net_payout || settlement.payout_amount || 0).toFixed(2),
+      settlement.status || 'unsettled',
+      settlement.settled_at ? new Date(settlement.settled_at).toLocaleString('en-IN') : '—'
+    ]);
+    
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(','))
+      .join('\r\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `canteen-settlements-${activeCanteen?.CanteenName || 'data'}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExport(false);
+  };
+
+  const exportToTXT = () => {
+    const filteredSettlements = getFilteredSettlements();
+    if (filteredSettlements.length === 0) return;
+    
+    const headers = [
+      'S.No.',
+      'Date',
+      'Orders Count',
+      'Total Revenue',
+      'Total Orders',
+      'Net Payout',
+      'Status',
+      'Settled At'
+    ];
+    
+    const rows = filteredSettlements.map((settlement, index) => [
+      index + 1,
+      settlement.order_date,
+      settlement.orders_count || 0,
+      Number(settlement.total_revenue || 0).toFixed(2),
+      Number(settlement.total_orders || 0).toFixed(2),
+      Number(settlement.net_payout || settlement.payout_amount || 0).toFixed(2),
+      settlement.status || 'unsettled',
+      settlement.settled_at ? new Date(settlement.settled_at).toLocaleString('en-IN') : '—'
+    ]);
+    
+    let txtContent = 'CANTEEN SETTLEMENTS REPORT\n';
+    txtContent += '='.repeat(60) + '\n\n';
+    txtContent += `Canteen: ${activeCanteen?.CanteenName || 'Unknown'}\n`;
+    txtContent += `Generated on: ${new Date().toLocaleString('en-IN')}\n`;
+    txtContent += `Total Records: ${filteredSettlements.length}\n\n`;
+    
+    txtContent += headers.join('\t') + '\n';
+    txtContent += '-'.repeat(120) + '\n';
+    
+    rows.forEach(row => {
+      txtContent += row.join('\t') + '\n';
+    });
+    
+    txtContent += '\n' + '='.repeat(60) + '\n';
+    txtContent += `Report generated on: ${new Date().toLocaleString('en-IN')}\n`;
+    
+    const blob = new Blob([txtContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `canteen-settlements-${activeCanteen?.CanteenName || 'data'}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setShowExport(false);
+  };
+
+  const exportToPDF = () => {
+    const filteredSettlements = getFilteredSettlements();
+    if (filteredSettlements.length === 0) return;
+    
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'A4' });
+    const title = 'Canteen Settlements Report';
+    const generatedOn = `Generated on: ${new Date().toLocaleString('en-IN')}`;
+    const canteenName = `Canteen: ${activeCanteen?.CanteenName || 'Unknown'}`;
+    
+    doc.setFontSize(16);
+    doc.text(title, 40, 40);
+    doc.setFontSize(10);
+    doc.text(canteenName, 40, 58);
+    doc.text(generatedOn, 40, 72);
+
+    const headers = [[
+      'S.No.',
+      'Date',
+      'Orders',
+      'Total Revenue',
+      'Total Orders',
+      'Net Payout',
+      'Status',
+      'Settled At'
+    ]];
+    
+    const rows = filteredSettlements.map((settlement, index) => [
+      index + 1,
+      settlement.order_date,
+      settlement.orders_count || 0,
+      `₹${Number(settlement.total_revenue || 0).toFixed(2)}`,
+      `₹${Number(settlement.total_orders || 0).toFixed(2)}`,
+      `₹${Number(settlement.net_payout || settlement.payout_amount || 0).toFixed(2)}`,
+      settlement.status || 'unsettled',
+      settlement.settled_at ? new Date(settlement.settled_at).toLocaleString('en-IN') : '—'
+    ]);
+
+    doc.autoTable({
+      head: headers,
+      body: rows,
+      startY: 90,
+      styles: { fontSize: 8, cellPadding: 4 },
+      headStyles: { fillColor: [242, 242, 242], textColor: 20 },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
+      columnStyles: {
+        0: { cellWidth: 40 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 60 },
+        3: { cellWidth: 100 },
+        4: { cellWidth: 100 },
+        5: { cellWidth: 100 },
+        6: { cellWidth: 80 },
+        7: { cellWidth: 120 }
+      },
+      didDrawPage: (data) => {
+        const pageCount = doc.getNumberOfPages();
+        const pageSize = doc.internal.pageSize;
+        const footerY = pageSize.height - 20;
+        doc.setFontSize(9);
+        doc.text(`Total Records: ${filteredSettlements.length}`, 40, footerY);
+        doc.text(`Page ${data.pageNumber} of ${pageCount}`, pageSize.width - 120, footerY);
+      },
+      margin: { left: 40, right: 40 },
+    });
+
+    doc.save(`canteen-settlements-${activeCanteen?.CanteenName || 'data'}.pdf`);
+    setShowExport(false);
+  };
+
   // Auto-open settlements if query present
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
@@ -214,14 +382,17 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
     }
   }, [settlements]);
 
-  // Handle click outside filter dropdown
+  // Handle click outside filter and export dropdowns
   useEffect(() => {
     function handleClickOutside(event) {
       if (filterRef.current && !filterRef.current.contains(event.target)) {
         setShowFilter(false);
       }
+      if (exportRef.current && !exportRef.current.contains(event.target)) {
+        setShowExport(false);
+      }
     }
-    if (showFilter) {
+    if (showFilter || showExport) {
       document.addEventListener('mousedown', handleClickOutside);
     } else {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -229,7 +400,7 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showFilter]);
+  }, [showFilter, showExport]);
 
   return (
     <div className="canteen-container">
@@ -271,23 +442,19 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                     )
                   })()}
                   
-                  {/* Filter Section - Separate from summary */}
+                  {/* Filter and Export Section - Separate from summary */}
                   <div className="settle-filters-section">
-                    <div className="settle-filters" ref={filterRef}>
-                      <div className="filter-header">
-                        <button
-                          className={`filter-toggle-btn ${hasActiveFilters() ? 'active' : ''}`}
-                          onClick={() => setShowFilter(!showFilter)}
-                        >
-                          <span>🔍 Filters</span>
-                          {hasActiveFilters() && <span className="filter-badge">●</span>}
-                        </button>
-                        {hasActiveFilters() && (
-                          <button className="clear-filters-btn" onClick={clearFilters}>
-                            Clear All
+                    <div className="filters-export-container">
+                      <div className="settle-filters" ref={filterRef}>
+                        <div className="filter-header">
+                          <button
+                            className={`filter-toggle-btn ${hasActiveFilters() ? 'active' : ''}`}
+                            onClick={() => setShowFilter(!showFilter)}
+                          >
+                            <span>🔍 Filters</span>
+                            {hasActiveFilters() && <span className="filter-badge">●</span>}
                           </button>
-                        )}
-                      </div>
+                        </div>
                       
                       {showFilter && (
                         <div className="filter-dropdown">
@@ -339,8 +506,42 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                               />
                             </div>
                           </div>
+                          
+                          {hasActiveFilters() && (
+                            <div className="filter-actions">
+                              <button className="clear-filters-btn" onClick={clearFilters}>
+                                Clear All Filters
+                              </button>
+                            </div>
+                          )}
                         </div>
                       )}
+                      </div>
+                      
+                      <div className="settle-export" ref={exportRef}>
+                        <div className="export-header">
+                          <button
+                            className="export-toggle-btn"
+                            onClick={() => setShowExport(!showExport)}
+                          >
+                            <span>📊 Export</span>
+                          </button>
+                        </div>
+                        
+                        {showExport && (
+                          <div className="export-dropdown">
+                            <button onClick={exportToPDF} className="export-option">
+                              📋 Export as PDF
+                            </button>
+                            <button onClick={exportToCSV} className="export-option">
+                              📊 Export as CSV
+                            </button>
+                            <button onClick={exportToTXT} className="export-option">
+                              📄 Export as TXT
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="settle-row settle-head">

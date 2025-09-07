@@ -468,6 +468,12 @@
   padding: 0.5rem 0;
 }
 
+.filters-export-container {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
 .settle-filters {
   position: relative;
 }
@@ -514,17 +520,17 @@
 }
 
 .clear-filters-btn {
-  padding: 0.7rem 1.2rem;
+  padding: 0.6rem 1rem;
   background: #dc3545;
   color: white;
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
   font-weight: 500;
   cursor: pointer;
   transition: background 0.2s ease;
   white-space: nowrap;
-  min-height: 44px;
+  width: 100%;
 }
 
 .clear-filters-btn:hover {
@@ -601,6 +607,82 @@
   font-style: italic;
 }
 
+.filter-actions {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+/* Export Styles */
+.settle-export {
+  position: relative;
+}
+
+.export-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.export-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.2rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  color: #495057;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+.export-toggle-btn:hover {
+  background: #e9ecef;
+  border-color: #dee2e6;
+}
+
+.export-dropdown {
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.8rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1000;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.export-option:hover {
+  background: #f8f9fa;
+  border-color: #007bff;
+  color: #007bff;
+}
+
 /* Responsive Design for Pagination */
 @media (max-width: 768px) {
   .pagination-container {
@@ -625,6 +707,12 @@
   .settle-filters-section {
     justify-content: center;
     margin: 0.5rem 0;
+  }
+  
+  .filters-export-container {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
   }
   
   .filter-dropdown {
