@@ -69,6 +69,16 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
   const [currentPage, setCurrentPage] = useState(1);
   const [chartKey, setChartKey] = useState(0); // Force chart re-render
   const itemsPerPage = 20;
+  
+  // Filter states
+  const [filters, setFilters] = useState({
+    status: 'all', // 'all', 'settled', 'unsettled'
+    month: 'all', // 'all', '2025-01', '2025-02', etc.
+    startDate: '',
+    endDate: ''
+  });
+  const [showFilter, setShowFilter] = useState(false);
+  const filterRef = React.useRef(null);
 
   const openSettlements = async (canteen) => {
     try {
@@ -102,12 +112,85 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
     setSettlements([]);
     setSettleError(null);
     setCurrentPage(1);
+    // Reset filters when closing settlements
+    setFilters({
+      status: 'all',
+      month: 'all',
+      startDate: '',
+      endDate: ''
+    });
     onNavVisibilityChange && onNavVisibilityChange(false);
     onExitSettlements && onExitSettlements();
     const sp = new URLSearchParams(window.location.search);
     sp.delete('view');
     sp.delete('canteenId');
     window.history.replaceState(null, '', `${window.location.pathname}?${sp.toString()}`);
+  };
+
+  // Filter logic
+  const getFilteredSettlements = () => {
+    return settlements.filter(settlement => {
+      // Status filter
+      if (filters.status !== 'all') {
+        const isSettled = settlement.status === 'settled';
+        if (filters.status === 'settled' && !isSettled) return false;
+        if (filters.status === 'unsettled' && isSettled) return false;
+      }
+
+      // Month filter
+      if (filters.month !== 'all') {
+        const settlementMonth = settlement.order_date.substring(0, 7); // YYYY-MM
+        if (settlementMonth !== filters.month) return false;
+      }
+
+      // Date range filter
+      if (filters.startDate) {
+        if (settlement.order_date < filters.startDate) return false;
+      }
+      if (filters.endDate) {
+        if (settlement.order_date > filters.endDate) return false;
+      }
+
+      return true;
+    });
+  };
+
+  // Get available months from settlements data
+  const getAvailableMonths = () => {
+    const months = new Set();
+    settlements.forEach(settlement => {
+      const month = settlement.order_date.substring(0, 7); // YYYY-MM
+      months.add(month);
+    });
+    return Array.from(months).sort().reverse(); // Most recent first
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }));
+    setCurrentPage(1); // Reset to first page when filters change
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      status: 'all',
+      month: 'all',
+      startDate: '',
+      endDate: ''
+    });
+    setCurrentPage(1);
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = () => {
+    return filters.status !== 'all' || 
+           filters.month !== 'all' || 
+           filters.startDate !== '' || 
+           filters.endDate !== '';
   };
 
   // Auto-open settlements if query present
@@ -131,6 +214,23 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
     }
   }, [settlements]);
 
+  // Handle click outside filter dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (filterRef.current && !filterRef.current.contains(event.target)) {
+        setShowFilter(false);
+      }
+    }
+    if (showFilter) {
+      document.addEventListener('mousedown', handleClickOutside);
+    } else {
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilter]);
+
   return (
     <div className="canteen-container">
       {!activeCanteen && (
@@ -152,16 +252,97 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
               <div className="settle-content">
                 <div className="settle-table">
                   {(() => {
-                    const totalDue = settlements
+                    const filteredSettlements = getFilteredSettlements();
+                    const totalDue = filteredSettlements
                       .filter(r => (r.status || 'unsettled') !== 'settled')
                       .reduce((sum, r) => sum + Number(r.net_payout || r.payout_amount || 0), 0)
                     return (
                       <div className="settle-summary" role="region" aria-label="Total payouts due">
-                        <div className="settle-summary-label">Total Payouts Due</div>
+                        <div className="settle-summary-label">
+                          Total Payouts Due {hasActiveFilters() ? '(Filtered)' : ''}
+                        </div>
                         <div className="settle-summary-value">₹ {Number(totalDue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                        {hasActiveFilters() && (
+                          <div className="filter-info">
+                            Showing {filteredSettlements.length} of {settlements.length} settlements
+                          </div>
+                        )}
                       </div>
                     )
                   })()}
+                  
+                  {/* Filter Section - Separate from summary */}
+                  <div className="settle-filters-section">
+                    <div className="settle-filters" ref={filterRef}>
+                      <div className="filter-header">
+                        <button
+                          className={`filter-toggle-btn ${hasActiveFilters() ? 'active' : ''}`}
+                          onClick={() => setShowFilter(!showFilter)}
+                        >
+                          <span>🔍 Filters</span>
+                          {hasActiveFilters() && <span className="filter-badge">●</span>}
+                        </button>
+                        {hasActiveFilters() && (
+                          <button className="clear-filters-btn" onClick={clearFilters}>
+                            Clear All
+                          </button>
+                        )}
+                      </div>
+                      
+                      {showFilter && (
+                        <div className="filter-dropdown">
+                          <div className="filter-section">
+                            <label>Status:</label>
+                            <select
+                              value={filters.status}
+                              onChange={(e) => handleFilterChange('status', e.target.value)}
+                            >
+                              <option value="all">All Status</option>
+                              <option value="settled">Settled Only</option>
+                              <option value="unsettled">Unsettled Only</option>
+                            </select>
+                          </div>
+                          
+                          <div className="filter-section">
+                            <label>Month:</label>
+                            <select
+                              value={filters.month}
+                              onChange={(e) => handleFilterChange('month', e.target.value)}
+                            >
+                              <option value="all">All Months</option>
+                              {getAvailableMonths().map(month => (
+                                <option key={month} value={month}>
+                                  {new Date(month + '-01').toLocaleDateString('en-IN', { 
+                                    year: 'numeric', 
+                                    month: 'long' 
+                                  })}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          <div className="filter-section">
+                            <label>Date Range:</label>
+                            <div className="date-range-inputs">
+                              <input
+                                type="date"
+                                placeholder="Start Date"
+                                value={filters.startDate}
+                                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                              />
+                              <span>to</span>
+                              <input
+                                type="date"
+                                placeholder="End Date"
+                                value={filters.endDate}
+                                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <div className="settle-row settle-head">
                     <div>S.No.</div>
                     <div>Date</div>
@@ -172,7 +353,7 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                     <div>Payment Status</div>
                     <div>Settled At</div>
                   </div>
-                  {settlements
+                  {getFilteredSettlements()
                     .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                     .map((r, index) => (
                     <div key={r.order_date} className="settle-row">
@@ -253,10 +434,11 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                   ))}
                   
                   {/* Pagination */}
-                  {settlements.length > itemsPerPage && (
+                  {getFilteredSettlements().length > itemsPerPage && (
                     <div className="pagination-container">
                       <div className="pagination-info">
-                        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, settlements.length)} of {settlements.length} settlements
+                        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, getFilteredSettlements().length)} of {getFilteredSettlements().length} settlements
+                        {hasActiveFilters() && ` (${settlements.length} total)`}
                       </div>
                       <div className="pagination-controls">
                         <button 
@@ -268,7 +450,8 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                         </button>
                         <div className="page-numbers">
                           {(() => {
-                            const totalPages = Math.ceil(settlements.length / itemsPerPage);
+                            const filteredLength = getFilteredSettlements().length;
+                            const totalPages = Math.ceil(filteredLength / itemsPerPage);
                             const startPage = Math.max(1, currentPage - 2);
                             const endPage = Math.min(totalPages, currentPage + 2);
                             const pages = [];
@@ -290,8 +473,8 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                         </div>
                         <button 
                           className="pagination-btn"
-                          onClick={() => setCurrentPage(prev => Math.min(Math.ceil(settlements.length / itemsPerPage), prev + 1))}
-                          disabled={currentPage === Math.ceil(settlements.length / itemsPerPage)}
+                          onClick={() => setCurrentPage(prev => Math.min(Math.ceil(getFilteredSettlements().length / itemsPerPage), prev + 1))}
+                          disabled={currentPage === Math.ceil(getFilteredSettlements().length / itemsPerPage)}
                         >
                           Next
                         </button>
@@ -300,11 +483,14 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                   )}
                 </div>
                 
+                {/* Spacer between table and charts */}
+                <div className="chart-spacer"></div>
+                
                 <div className="chart-section" key={chartKey}>
                   <div className="chart-card">
                     <div className="chart-title">Daily Net Payouts</div>
                     {(() => {
-                      const data = settlements
+                      const data = getFilteredSettlements()
                         .slice()
                         .sort((a,b) => new Date(a.order_date) - new Date(b.order_date))
                         .map(r => {
@@ -362,6 +548,104 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                             </div>
                           </div>
                         )
+                    })()}
+                  </div>
+                </div>
+                
+                {/* Spacer between daily and monthly charts */}
+                <div className="chart-spacer"></div>
+                
+                {/* Monthly Chart Section */}
+                <div className="chart-section" key={`${chartKey}-monthly`}>
+                  <div className="chart-card">
+                    <div className="chart-title">Monthly Net Payouts</div>
+                    {(() => {
+                      // Group data by month
+                      const monthlyData = new Map();
+                      getFilteredSettlements().forEach(settlement => {
+                        const month = settlement.order_date.substring(0, 7); // YYYY-MM
+                        const amount = Number(settlement.net_payout || settlement.payout_amount || 0);
+                        const isSettled = settlement.status === 'settled';
+                        
+                        if (!monthlyData.has(month)) {
+                          monthlyData.set(month, { total: 0, settled: 0, unsettled: 0 });
+                        }
+                        
+                        const monthData = monthlyData.get(month);
+                        monthData.total += amount;
+                        if (isSettled) {
+                          monthData.settled += amount;
+                        } else {
+                          monthData.unsettled += amount;
+                        }
+                      });
+                      
+                      // Convert to array and sort by month
+                      const data = Array.from(monthlyData.entries())
+                        .map(([month, data]) => ({
+                          monthLabel: new Date(month + '-01').toLocaleDateString('en-IN', { 
+                            year: 'numeric', 
+                            month: 'short' 
+                          }),
+                          total: data.total,
+                          settled: data.settled,
+                          unsettled: data.unsettled,
+                          monthKey: month
+                        }))
+                        .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
+                      
+                      const maxVal = Math.max(1, ...data.map(d => d.total));
+                      const maxRange = Math.ceil(maxVal / 1000) * 1000; // Round up to nearest 1000
+                      const yAxisSteps = Math.ceil(maxRange / 1000); // Number of 1000 increments
+                      
+                      return (
+                        <div className="horizontal-chart">
+                          {/* Y-axis labels (amount range) */}
+                          <div className="y-axis-labels">
+                            {Array.from({ length: yAxisSteps + 1 }, (_, i) => (
+                              <div key={i} className="y-axis-label">
+                                ₹{((yAxisSteps - i) * 1000).toLocaleString('en-IN')}
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {/* Chart area */}
+                          <div className="chart-area">
+                            {/* Y-axis grid lines */}
+                            <div className="y-axis-grid">
+                              {Array.from({ length: yAxisSteps + 1 }, (_, i) => (
+                                <div key={i} className="grid-line" style={{ bottom: `${((yAxisSteps - i) / yAxisSteps) * 100}%` }}></div>
+                              ))}
+                            </div>
+                            
+                            {/* Data bars */}
+                            <div className="horizontal-bars">
+                              {data.map((d) => {
+                                const totalHeightPct = Math.round((d.total / maxRange) * 100);
+                                const settledHeightPct = d.total > 0 ? Math.round((d.settled / d.total) * totalHeightPct) : 0;
+                                
+                                return (
+                                  <div key={d.monthKey} className="horizontal-bar">
+                                    <div className="date-label">{d.monthLabel}</div>
+                                    <div className="bar-container">
+                                      <div 
+                                        className="horizontal-bar-fill bar-fill-settled" 
+                                        style={{ height: `${settledHeightPct}%` }} 
+                                        title={`Settled: ₹${d.settled.toLocaleString('en-IN')}`}
+                                      ></div>
+                                      <div 
+                                        className="horizontal-bar-fill bar-fill-unsettled" 
+                                        style={{ height: `${totalHeightPct - settledHeightPct}%` }} 
+                                        title={`Unsettled: ₹${d.unsettled.toLocaleString('en-IN')}`}
+                                      ></div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )
                     })()}
                   </div>
                 </div>
