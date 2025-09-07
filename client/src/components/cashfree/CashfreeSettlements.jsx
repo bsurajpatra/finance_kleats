@@ -1,8 +1,28 @@
 import React, { useEffect, useState } from 'react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import './CashfreeSettlements.css';
 import { API_ENDPOINTS, authFetch } from '../../config/api.js';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const CashfreeSettlements = () => {
   const [settlements, setSettlements] = useState([]);
@@ -178,6 +198,114 @@ const CashfreeSettlements = () => {
       ...prev,
       currentPage: 1
     }));
+  };
+
+  // Chart data preparation
+  const getDailyChartData = () => {
+    const sortedSettlements = getSortedSettlements();
+    const dailyMap = new Map();
+    
+    for (const settlement of sortedSettlements) {
+      const settlementDate = settlement.transfer_time || settlement.settled_at;
+      if (settlementDate) {
+        const date = new Date(settlementDate);
+        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        const prev = dailyMap.get(dateKey) || 0;
+        dailyMap.set(dateKey, prev + Number(settlement.amount_settled || 0));
+      }
+    }
+
+    const dailyData = Array.from(dailyMap.entries())
+      .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+      .map(([date, amount]) => ({
+        date: new Date(date).toLocaleDateString('en-IN', { 
+          day: '2-digit', 
+          month: 'short' 
+        }),
+        amount: Number(amount || 0)
+      }));
+
+    return {
+      labels: dailyData.map(item => item.date),
+      datasets: [
+        {
+          label: 'Daily Settlement Amount',
+          data: dailyData.map(item => item.amount),
+          backgroundColor: 'rgba(40, 167, 69, 0.8)',
+          borderColor: 'rgba(40, 167, 69, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+
+  const getMonthlyChartData = () => {
+    const sortedSettlements = getSortedSettlements();
+    const monthMap = new Map();
+    
+    for (const settlement of sortedSettlements) {
+      const settlementDate = settlement.transfer_time || settlement.settled_at;
+      if (settlementDate) {
+        const date = new Date(settlementDate);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const prev = monthMap.get(key) || 0;
+        monthMap.set(key, prev + Number(settlement.amount_settled || 0));
+      }
+    }
+
+    const monthlyData = Array.from(monthMap.entries())
+      .sort((a, b) => new Date(a[0] + '-01') - new Date(b[0] + '-01'))
+      .map(([key, amount]) => ({
+        month: new Date(key + '-01').toLocaleDateString('en-IN', { 
+          month: 'short', 
+          year: 'numeric' 
+        }),
+        amount: Number(amount || 0)
+      }));
+
+    return {
+      labels: monthlyData.map(item => item.month),
+      datasets: [
+        {
+          label: 'Monthly Settlement Amount',
+          data: monthlyData.map(item => item.amount),
+          backgroundColor: 'rgba(40, 167, 69, 0.8)',
+          borderColor: 'rgba(40, 167, 69, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+
+  // Chart options
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return '₹' + value.toLocaleString('en-IN');
+          }
+        }
+      }
+    },
   };
 
   // Export functions
@@ -561,6 +689,27 @@ const CashfreeSettlements = () => {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Charts Section */}
+      {getSortedSettlements().length > 0 && (
+        <div className="settlements-charts">
+          {/* Daily Chart */}
+          <div className="chart-card">
+            <div className="chart-title">Daily Settlement Amounts</div>
+            <div className="chart-container">
+              <Bar data={getDailyChartData()} options={chartOptions} />
+            </div>
+          </div>
+
+          {/* Monthly Chart */}
+          <div className="chart-card">
+            <div className="chart-title">Monthly Settlement Amounts</div>
+            <div className="chart-container">
+              <Bar data={getMonthlyChartData()} options={chartOptions} />
+            </div>
+          </div>
         </div>
       )}
     </div>
