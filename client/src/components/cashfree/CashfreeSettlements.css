@@ -334,6 +334,98 @@
   color: #856404;
 }
 
+/* Pagination Controls */
+.pagination-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.pagination-info {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pagination-btn {
+  padding: 0.5rem 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #e03131;
+  color: #e03131;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f8f9fa;
+}
+
+.page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.page-number {
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  text-align: center;
+}
+
+.page-number:hover {
+  background: #f8f9fa;
+  border-color: #e03131;
+  color: #e03131;
+}
+
+.page-number.active {
+  background: #e03131;
+  border-color: #e03131;
+  color: #fff;
+}
+
+.page-number.active:hover {
+  background: #c92a2a;
+  border-color: #c92a2a;
+}
+
+.ellipsis {
+  padding: 0.5rem 0.25rem;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .settlements-filters {
@@ -360,6 +452,22 @@
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
+  }
+  
+  .pagination-controls {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .pagination-buttons {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .page-numbers {
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .table-header, .table-row {

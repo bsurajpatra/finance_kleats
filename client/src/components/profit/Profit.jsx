@@ -1,6 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { API_ENDPOINTS, authFetch } from '../../config/api.js';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import './Profit.css';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const Profit = ({ canteenId = null }) => {
   const [grossProfitData, setGrossProfitData] = useState([]);
@@ -96,6 +116,105 @@ const Profit = ({ canteenId = null }) => {
   });
 
   const totalGrossProfit = sortedData.reduce((sum, item) => sum + Number(item.gross_profit), 0);
+
+  // Chart data preparation
+  const getDailyChartData = () => {
+    const dailyData = sortedData
+      .slice()
+      .sort((a, b) => new Date(a.order_date) - new Date(b.order_date))
+      .map(item => ({
+        date: new Date(item.order_date).toLocaleDateString('en-IN', { 
+          day: '2-digit', 
+          month: 'short' 
+        }),
+        profit: Number(item.gross_profit || 0)
+      }));
+
+    return {
+      labels: dailyData.map(item => item.date),
+      datasets: [
+        {
+          label: 'Daily Gross Profit',
+          data: dailyData.map(item => item.profit),
+          backgroundColor: dailyData.map(item => 
+            item.profit >= 0 ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)'
+          ),
+          borderColor: dailyData.map(item => 
+            item.profit >= 0 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)'
+          ),
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+
+  const getMonthlyChartData = () => {
+    const monthMap = new Map();
+    for (const item of sortedData) {
+      const dt = new Date(item.order_date);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+      const prev = monthMap.get(key) || 0;
+      monthMap.set(key, prev + Number(item.gross_profit || 0));
+    }
+
+    const monthlyData = Array.from(monthMap.entries())
+      .sort((a, b) => new Date(a[0] + '-01') - new Date(b[0] + '-01'))
+      .map(([key, sum]) => ({
+        month: new Date(key + '-01').toLocaleDateString('en-IN', { 
+          month: 'short', 
+          year: 'numeric' 
+        }),
+        profit: Number(sum || 0)
+      }));
+
+    return {
+      labels: monthlyData.map(item => item.month),
+      datasets: [
+        {
+          label: 'Monthly Gross Profit',
+          data: monthlyData.map(item => item.profit),
+          backgroundColor: monthlyData.map(item => 
+            item.profit >= 0 ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)'
+          ),
+          borderColor: monthlyData.map(item => 
+            item.profit >= 0 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)'
+          ),
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+
+  // Chart options
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: false,
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            return `${context.dataset.label}: ${formatAmount(context.parsed.y)}`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value) {
+            return '₹' + value.toLocaleString('en-IN');
+          }
+        }
+      }
+    },
+  };
 
   if (loading) {
     return (
@@ -249,116 +368,20 @@ const Profit = ({ canteenId = null }) => {
       {/* Charts Section */}
       {sortedData.length > 0 && (
         <div className="profit-charts">
-          {/* Daily chart */}
+          {/* Daily Chart */}
           <div className="chart-card">
             <div className="chart-title">Daily Gross Profit</div>
-            {(() => {
-              const chartData = sortedData
-                .slice()
-                .sort((a,b) => new Date(a.order_date) - new Date(b.order_date))
-                .map(r => ({
-                  label: new Date(r.order_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
-                  value: Number(r.gross_profit || 0)
-                }));
-              
-              // Calculate dynamic Y-axis ticks for daily chart (0, 50, 100, 150, 200, 250, 300...)
-              const maxVal = Math.max(1, ...chartData.map(d => Math.abs(d.value)));
-              const tickInterval = 50;
-              const maxTick = Math.ceil(maxVal / tickInterval) * tickInterval;
-              const yAxisTicks = [];
-              for (let i = 0; i <= maxTick; i += tickInterval) {
-                yAxisTicks.push(i);
-              }
-              
-              return (
-                <div className="chart-container">
-                  <div className="y-axis">
-                    {yAxisTicks.map((tick, idx) => (
-                      <div key={idx} className="y-tick">
-                        <span className="y-tick-label">₹{tick}</span>
-                        <div className="y-tick-line"></div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="bars">
-                    {chartData.map((d, idx) => {
-                      const raw = Math.abs(Number(d.value ?? 0));
-                      const pct = Math.round((raw / maxTick) * 100);
-                      const heightPct = Math.max(2, pct); // ensure at least a small bar even for zero
-                      return (
-                        <div key={idx} className="bar">
-                          <div
-                            className={`bar-fill ${d.value >= 0 ? 'bar-positive' : 'bar-negative'}`}
-                            style={{ height: `${heightPct}%` }}
-                            title={`${formatAmount(d.value)}`}
-                          />
-                          <div className="bar-label">{d.label}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
+            <div className="chart-container">
+              <Bar data={getDailyChartData()} options={chartOptions} />
+            </div>
           </div>
 
-          {/* Monthly chart */}
+          {/* Monthly Chart */}
           <div className="chart-card">
             <div className="chart-title">Monthly Gross Profit</div>
-            {(() => {
-              const monthMap = new Map();
-              for (const r of sortedData) {
-                const dt = new Date(r.order_date);
-                const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-                const prev = monthMap.get(key) || 0;
-                monthMap.set(key, prev + Number(r.gross_profit || 0));
-              }
-              const chartData = Array.from(monthMap.entries())
-                .sort((a,b) => new Date(a[0]+'-01') - new Date(b[0]+'-01'))
-                .map(([key, sum]) => ({
-                  label: new Date(key+'-01').toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
-                  value: Number(sum || 0)
-                }));
-              
-              // Calculate dynamic Y-axis ticks for monthly chart (0, 200, 400, 600, 800, 1000...)
-              const maxVal = Math.max(1, ...chartData.map(d => Math.abs(d.value)));
-              const tickInterval = 200;
-              const maxTick = Math.ceil(maxVal / tickInterval) * tickInterval;
-              const yAxisTicks = [];
-              for (let i = 0; i <= maxTick; i += tickInterval) {
-                yAxisTicks.push(i);
-              }
-              
-              return (
-                <div className="chart-container">
-                  <div className="y-axis">
-                    {yAxisTicks.map((tick, idx) => (
-                      <div key={idx} className="y-tick">
-                        <span className="y-tick-label">₹{tick}</span>
-                        <div className="y-tick-line"></div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="bars">
-                    {chartData.map((d, idx) => {
-                      const raw = Math.abs(Number(d.value ?? 0));
-                      const pct = Math.round((raw / maxTick) * 100);
-                      const heightPct = Math.max(2, pct);
-                      return (
-                        <div key={idx} className="bar">
-                          <div
-                            className={`bar-fill ${d.value >= 0 ? 'bar-positive' : 'bar-negative'}`}
-                            style={{ height: `${heightPct}%` }}
-                            title={`${formatAmount(d.value)}`}
-                          />
-                          <div className="bar-label">{d.label}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
+            <div className="chart-container">
+              <Bar data={getMonthlyChartData()} options={chartOptions} />
+            </div>
           </div>
         </div>
       )}

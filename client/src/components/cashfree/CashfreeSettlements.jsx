@@ -21,6 +21,10 @@ const CashfreeSettlements = () => {
     limit: 50,
     cursor: null
   });
+  const [clientPagination, setClientPagination] = useState({
+    currentPage: 1,
+    itemsPerPage: 20
+  });
 
   const fetchSettlements = async (useFilters = false) => {
     try {
@@ -94,12 +98,14 @@ const CashfreeSettlements = () => {
   };
 
   const handleApplyFilters = () => {
+    resetPagination();
     fetchSettlements(true);
   };
 
   const handleClearFilters = () => {
     setFilters({ start_date: '', end_date: '', sortOrder: 'desc' });
     setPagination({ limit: 50, cursor: null });
+    resetPagination();
     fetchSettlements();
   };
 
@@ -130,6 +136,48 @@ const CashfreeSettlements = () => {
       return filters.sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
     });
     return sorted;
+  };
+
+  // Get paginated settlements
+  const getPaginatedSettlements = () => {
+    const sortedSettlements = getSortedSettlements();
+    const startIndex = (clientPagination.currentPage - 1) * clientPagination.itemsPerPage;
+    const endIndex = startIndex + clientPagination.itemsPerPage;
+    return sortedSettlements.slice(startIndex, endIndex);
+  };
+
+  // Get pagination info
+  const getPaginationInfo = () => {
+    const sortedSettlements = getSortedSettlements();
+    const totalItems = sortedSettlements.length;
+    const totalPages = Math.ceil(totalItems / clientPagination.itemsPerPage);
+    const startIndex = (clientPagination.currentPage - 1) * clientPagination.itemsPerPage;
+    const endIndex = Math.min(startIndex + clientPagination.itemsPerPage, totalItems);
+    
+    return {
+      totalItems,
+      totalPages,
+      startIndex: startIndex + 1,
+      endIndex,
+      hasNextPage: clientPagination.currentPage < totalPages,
+      hasPrevPage: clientPagination.currentPage > 1
+    };
+  };
+
+  // Handle page change
+  const handlePageChange = (newPage) => {
+    setClientPagination(prev => ({
+      ...prev,
+      currentPage: newPage
+    }));
+  };
+
+  // Reset pagination when filters change
+  const resetPagination = () => {
+    setClientPagination(prev => ({
+      ...prev,
+      currentPage: 1
+    }));
   };
 
   // Export functions
@@ -375,9 +423,9 @@ const CashfreeSettlements = () => {
       ) : (
         <div className="settlements-table-container">
           <div className="settlements-summary">
-            <p>Total Settlements: {settlements.length}</p>
+            <p>Total Settlements: {getSortedSettlements().length}</p>
             <p>Total Amount Settled: {formatCurrency(
-              settlements.reduce((sum, s) => sum + (Number(s.amount_settled || 0)), 0)
+              getSortedSettlements().reduce((sum, s) => sum + (Number(s.amount_settled || 0)), 0)
             )}</p>
           </div>
           
@@ -390,16 +438,129 @@ const CashfreeSettlements = () => {
               <div className="col-settled">Settled At</div>
             </div>
             
-            {getSortedSettlements().map((settlement, index) => (
-              <div key={index} className="table-row">
-                <div className="serial-number col-sno">{index + 1}</div>
-                <div className="settlement-amount col-amount">{formatCurrency(Number(settlement.amount_settled || 0))}</div>
-                <div className="payment-time col-from">{settlement.payment_from ? formatDate(settlement.payment_from) : '—'}</div>
-                <div className="payment-time col-till">{settlement.payment_till ? formatDate(settlement.payment_till) : '—'}</div>
-                <div className="transfer-time col-settled">{settlement.transfer_time ? formatDate(settlement.transfer_time) : (settlement.settled_at ? formatDate(settlement.settled_at) : '—')}</div>
-              </div>
-            ))}
+            {getPaginatedSettlements().map((settlement, index) => {
+              const paginationInfo = getPaginationInfo();
+              const globalIndex = paginationInfo.startIndex + index - 1;
+              return (
+                <div key={globalIndex} className="table-row">
+                  <div className="serial-number col-sno">{globalIndex + 1}</div>
+                  <div className="settlement-amount col-amount">{formatCurrency(Number(settlement.amount_settled || 0))}</div>
+                  <div className="payment-time col-from">{settlement.payment_from ? formatDate(settlement.payment_from) : '—'}</div>
+                  <div className="payment-time col-till">{settlement.payment_till ? formatDate(settlement.payment_till) : '—'}</div>
+                  <div className="transfer-time col-settled">{settlement.transfer_time ? formatDate(settlement.transfer_time) : (settlement.settled_at ? formatDate(settlement.settled_at) : '—')}</div>
+                </div>
+              );
+            })}
           </div>
+          
+          {/* Pagination Controls */}
+          {(() => {
+            const paginationInfo = getPaginationInfo();
+            if (paginationInfo.totalPages <= 1) return null;
+            
+            return (
+              <div className="pagination-controls">
+                <div className="pagination-info">
+                  Showing {paginationInfo.startIndex} to {paginationInfo.endIndex} of {paginationInfo.totalItems} settlements
+                </div>
+                <div className="pagination-buttons">
+                  <button
+                    className="pagination-btn"
+                    onClick={() => handlePageChange(clientPagination.currentPage - 1)}
+                    disabled={!paginationInfo.hasPrevPage}
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="page-numbers">
+                    {(() => {
+                      const pages = [];
+                      const totalPages = paginationInfo.totalPages;
+                      const currentPage = clientPagination.currentPage;
+                      
+                      // Show page numbers with ellipsis for large page counts
+                      if (totalPages <= 7) {
+                        // Show all pages if 7 or fewer
+                        for (let i = 1; i <= totalPages; i++) {
+                          pages.push(
+                            <button
+                              key={i}
+                              className={`page-number ${i === currentPage ? 'active' : ''}`}
+                              onClick={() => handlePageChange(i)}
+                            >
+                              {i}
+                            </button>
+                          );
+                        }
+                      } else {
+                        // Show first page
+                        pages.push(
+                          <button
+                            key={1}
+                            className={`page-number ${1 === currentPage ? 'active' : ''}`}
+                            onClick={() => handlePageChange(1)}
+                          >
+                            1
+                          </button>
+                        );
+                        
+                        // Show ellipsis if current page is far from start
+                        if (currentPage > 4) {
+                          pages.push(<span key="ellipsis1" className="ellipsis">...</span>);
+                        }
+                        
+                        // Show pages around current page
+                        const start = Math.max(2, currentPage - 1);
+                        const end = Math.min(totalPages - 1, currentPage + 1);
+                        
+                        for (let i = start; i <= end; i++) {
+                          if (i !== 1 && i !== totalPages) {
+                            pages.push(
+                              <button
+                                key={i}
+                                className={`page-number ${i === currentPage ? 'active' : ''}`}
+                                onClick={() => handlePageChange(i)}
+                              >
+                                {i}
+                              </button>
+                            );
+                          }
+                        }
+                        
+                        // Show ellipsis if current page is far from end
+                        if (currentPage < totalPages - 3) {
+                          pages.push(<span key="ellipsis2" className="ellipsis">...</span>);
+                        }
+                        
+                        // Show last page
+                        if (totalPages > 1) {
+                          pages.push(
+                            <button
+                              key={totalPages}
+                              className={`page-number ${totalPages === currentPage ? 'active' : ''}`}
+                              onClick={() => handlePageChange(totalPages)}
+                            >
+                              {totalPages}
+                            </button>
+                          );
+                        }
+                      }
+                      
+                      return pages;
+                    })()}
+                  </div>
+                  
+                  <button
+                    className="pagination-btn"
+                    onClick={() => handlePageChange(clientPagination.currentPage + 1)}
+                    disabled={!paginationInfo.hasNextPage}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
