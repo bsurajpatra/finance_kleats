@@ -199,7 +199,7 @@
 .settle-left { margin-right: -12px; }
 .settle-right { margin-left: 4px; }
 
-.chart-wrapper { width: 100%; max-width: 420px; }
+/* .chart-wrapper removed (unused) */
 
 .chart-spacer {
   height: 2rem;
@@ -219,24 +219,8 @@
   margin-bottom: 8px;
 }
 
-.bars {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  align-items: end;
-  gap: 10px;
-  height: 260px;
-}
-
-.bar { display: flex; flex-direction: column; align-items: center; }
-.bar-fill {
-  width: 100%;
-  background: linear-gradient(180deg, #82c91e, #2f9e44);
-  border-radius: 6px 6px 0 0;
-}
-.bar-fill-unsettled { background: linear-gradient(180deg, #e9ecef, #ced4da); }
-.bar-fill-settled { background: linear-gradient(180deg, #82c91e, #2f9e44); }
-.bar-label { margin-top: 6px; font-size: 0.85rem; color: #666; }
+/* Removed legacy vertical bar styles (.bars, .bar, .bar-fill, .bar-label) and
+   the old grey unsettled color variant as the monthly chart now uses Chart.js */
 
 /* Horizontal Chart Styles */
 .horizontal-chart {
@@ -327,13 +311,8 @@
   transition: all 0.3s ease;
 }
 
-.bar-fill-settled {
-  background: linear-gradient(180deg, #82c91e, #2f9e44);
-}
-
-.bar-fill-unsettled {
-  background: linear-gradient(180deg, #ff6b6b, #e03131);
-}
+.bar-fill-settled { background: linear-gradient(180deg, #82c91e, #2f9e44); }
+.bar-fill-unsettled { background: linear-gradient(180deg, #ff6b6b, #e03131); }
 
 .horizontal-bar-fill:hover {
   opacity: 0.8;
@@ -351,6 +330,16 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 8px;
+}
+
+/* Horizontal scroll container only for the table, when needed */
+.settle-table-scroll {
+  overflow-x: auto;
+}
+
+.settle-table-scroll .settle-row,
+.settle-table-scroll .settle-head {
+  min-width: 980px; /* only applies when inside scroll container */
 }
 
 .settle-summary {
@@ -470,8 +459,9 @@
 
 .filters-export-container {
   display: flex;
-  gap: 1rem;
-  align-items: flex-start;
+  gap: 0.6rem;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 .settle-filters {
@@ -488,18 +478,18 @@
 .filter-toggle-btn {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 1.2rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
   background: #f8f9fa;
   border: 1px solid #e9ecef;
   border-radius: 8px;
   color: #495057;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  min-height: 44px;
+  min-height: 36px;
 }
 
 .filter-toggle-btn:hover {
@@ -627,18 +617,18 @@
 .export-toggle-btn {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 1.2rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
   background: #f8f9fa;
   border: 1px solid #e9ecef;
   border-radius: 8px;
   color: #495057;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  min-height: 44px;
+  min-height: 36px;
 }
 
 .export-toggle-btn:hover {
@@ -683,6 +673,20 @@
   color: #007bff;
 }
 
+/* ---------- Responsive Layout Enhancements ---------- */
+@media (max-width: 1200px) {
+  .canteen-media { height: 280px; }
+  .horizontal-chart { height: 260px; }
+}
+
+@media (max-width: 992px) {
+  .canteen-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+  .canteen-media { height: 220px; }
+  .horizontal-chart { height: 240px; }
+  .y-axis-labels { min-width: 52px; }
+  .date-label { bottom: -20px; transform: rotate(-35deg); }
+}
+
 /* Responsive Design for Pagination */
 @media (max-width: 768px) {
   .pagination-container {
@@ -709,10 +713,13 @@
     margin: 0.5rem 0;
   }
   
+  .settle-filters-section { overflow-x: auto; }
   .filters-export-container {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: nowrap;
     gap: 0.5rem;
     align-items: center;
+    white-space: nowrap; /* keep buttons in one line */
   }
   
   .filter-dropdown {
@@ -739,4 +746,20 @@
     font-size: 0.9rem;
     padding: 0.5rem;
   }
+  .horizontal-chart { height: 220px; }
+}
+
+@media (max-width: 576px) {
+  .canteen-container { padding: 1rem; }
+  .settle-summary { grid-template-columns: 1fr; }
+  .settle-summary-value { text-align: left; }
+  .y-axis-labels { min-width: 46px; }
+  .date-label { transform: none; bottom: -14px; font-size: 0.7rem; }
+  .horizontal-chart { height: 200px; }
+  .settle-row, .settle-head { font-size: 0.9rem; }
+  /* Hide low-priority columns on very small screens */
+  .settle-head > div:nth-child(5),
+  .settle-row > div:nth-child(5),
+  .settle-head > div:nth-child(7),
+  .settle-row > div:nth-child(7) { display: none; }
 }

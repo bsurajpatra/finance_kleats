@@ -1,6 +1,19 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './CanteenPaymentManagement.css';
 import { API_ENDPOINTS, authFetch } from '../../config/api.js';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+// Register Chart.js elements once
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, onExitSettlements }) => {
   const [canteens, setCanteens] = useState([]);
@@ -544,32 +557,33 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                       </div>
                     </div>
                   </div>
-                  <div className="settle-row settle-head">
-                    <div>S.No.</div>
-                    <div>Date</div>
-                    <div>Orders</div>
-                    <div>Total Revenue</div>
-                    <div>Total Orders</div>
-                    <div>Net Payout</div>
-                    <div>Payment Status</div>
-                    <div>Settled At</div>
-                  </div>
-                  {getFilteredSettlements()
-                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
-                    .map((r, index) => (
-                    <div key={r.order_date} className="settle-row">
-                      <div>{(currentPage - 1) * itemsPerPage + index + 1}</div>
-                      <div>{(() => {
+                  <div className="settle-table-scroll">
+                    <div className="settle-row settle-head">
+                      <div>S.No.</div>
+                      <div>Date</div>
+                      <div>Orders</div>
+                      <div>Total Revenue</div>
+                      <div>Total Orders</div>
+                      <div>Net Payout</div>
+                      <div>Payment Status</div>
+                      <div>Settled At</div>
+                    </div>
+                    {getFilteredSettlements()
+                      .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                      .map((r, index) => (
+                      <div key={r.order_date} className="settle-row">
+                        <div>{(currentPage - 1) * itemsPerPage + index + 1}</div>
+                        <div>{(() => {
                         // order_date is already in YYYY-MM-DD format from the backend
                         const [year, month, day] = r.order_date.split('-');
                         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
                         return `${day} ${months[parseInt(month) - 1]} ${year}`;
                       })()}</div>
-                      <div>{r.orders_count}</div>
-                      <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                      <div>₹ {Number(r.total_orders || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                      <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
-                      <div>
+                        <div>{r.orders_count}</div>
+                        <div>₹ {Number(r.total_revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div>₹ {Number(r.total_orders || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                        <div>₹ {Number(r.net_payout || r.payout_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</div>
+                        <div>
                         {r.status === 'settled' ? (
                           <div className="btn-status-settled-disabled" title={`Settled on ${r.settled_at ? new Date(r.settled_at).toLocaleDateString('en-IN') : 'Unknown date'}`}>
                             <span className="status-icon">✅</span>
@@ -629,10 +643,11 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                             <span>Settle</span>
                           </button>
                         )}
+                        </div>
+                        <div>{r.settled_at ? new Date(r.settled_at).toLocaleString('en-IN', { hour12: false }) : '—'}</div>
                       </div>
-                      <div>{r.settled_at ? new Date(r.settled_at).toLocaleString('en-IN', { hour12: false }) : '—'}</div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                   
                   {/* Pagination */}
                   {getFilteredSettlements().length > itemsPerPage && (
@@ -761,92 +776,85 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
                   <div className="chart-card">
                     <div className="chart-title">Monthly Net Payouts</div>
                     {(() => {
-                      // Group data by month
-                      const monthlyData = new Map();
-                      getFilteredSettlements().forEach(settlement => {
-                        const month = settlement.order_date.substring(0, 7); // YYYY-MM
-                        const amount = Number(settlement.net_payout || settlement.payout_amount || 0);
-                        const isSettled = settlement.status === 'settled';
-                        
-                        if (!monthlyData.has(month)) {
-                          monthlyData.set(month, { total: 0, settled: 0, unsettled: 0 });
+                      // Aggregate by month
+                      const monthlyMap = new Map();
+                      getFilteredSettlements().forEach((row) => {
+                        const monthKey = row.order_date.substring(0, 7); // YYYY-MM
+                        const amount = Number(row.net_payout || row.payout_amount || 0);
+                        const isSettled = row.status === 'settled';
+                        if (!monthlyMap.has(monthKey)) {
+                          monthlyMap.set(monthKey, { settled: 0, unsettled: 0 });
                         }
-                        
-                        const monthData = monthlyData.get(month);
-                        monthData.total += amount;
-                        if (isSettled) {
-                          monthData.settled += amount;
-                        } else {
-                          monthData.unsettled += amount;
-                        }
+                        const entry = monthlyMap.get(monthKey);
+                        if (isSettled) entry.settled += amount; else entry.unsettled += amount;
                       });
-                      
-                      // Convert to array and sort by month
-                      const data = Array.from(monthlyData.entries())
-                        .map(([month, data]) => ({
-                          monthLabel: new Date(month + '-01').toLocaleDateString('en-IN', { 
-                            year: 'numeric', 
-                            month: 'short' 
-                          }),
-                          total: data.total,
-                          settled: data.settled,
-                          unsettled: data.unsettled,
-                          monthKey: month
+
+                      const rows = Array.from(monthlyMap.entries())
+                        .map(([monthKey, vals]) => ({
+                          monthKey,
+                          label: new Date(monthKey + '-01').toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
+                          ...vals,
                         }))
                         .sort((a, b) => a.monthKey.localeCompare(b.monthKey));
-                      
-                      const maxVal = Math.max(1, ...data.map(d => d.total));
-                      const maxRange = Math.ceil(maxVal / 1000) * 1000; // Round up to nearest 1000
-                      const yAxisSteps = Math.ceil(maxRange / 1000); // Number of 1000 increments
-                      
+
+                      const data = {
+                        labels: rows.map(r => r.label),
+                        datasets: [
+                          {
+                            label: 'Settled',
+                            data: rows.map(r => r.settled),
+                            backgroundColor: 'rgba(40, 167, 69, 0.85)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 1,
+                            stack: 'payouts',
+                          },
+                          {
+                            label: 'Unsettled',
+                            data: rows.map(r => r.unsettled),
+                            backgroundColor: 'rgba(220, 53, 69, 0.85)',
+                            borderColor: 'rgba(220, 53, 69, 1)',
+                            borderWidth: 1,
+                            stack: 'payouts',
+                          },
+                        ],
+                      };
+
+                      const options = {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: { position: 'top' },
+                          tooltip: {
+                            callbacks: {
+                              label: (ctx) => {
+                                const v = Number(ctx.parsed.y || 0);
+                                return `${ctx.dataset.label}: ₹${v.toLocaleString('en-IN')}`;
+                              },
+                              footer: (items) => {
+                                // Sum to show total at footer
+                                const total = items.reduce((s, i) => s + (i.parsed?.y || 0), 0);
+                                return `Total: ₹${Number(total).toLocaleString('en-IN')}`;
+                              },
+                            },
+                          },
+                        },
+                        scales: {
+                          x: { stacked: true },
+                          y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                              callback: (value) => `₹${Number(value).toLocaleString('en-IN')}`,
+                            },
+                          },
+                        },
+                      };
+
                       return (
-                        <div className="horizontal-chart">
-                          {/* Y-axis labels (amount range) */}
-                          <div className="y-axis-labels">
-                            {Array.from({ length: yAxisSteps + 1 }, (_, i) => (
-                              <div key={i} className="y-axis-label">
-                                ₹{((yAxisSteps - i) * 1000).toLocaleString('en-IN')}
-                              </div>
-                            ))}
-                          </div>
-                          
-                          {/* Chart area */}
-                          <div className="chart-area">
-                            {/* Y-axis grid lines */}
-                            <div className="y-axis-grid">
-                              {Array.from({ length: yAxisSteps + 1 }, (_, i) => (
-                                <div key={i} className="grid-line" style={{ bottom: `${((yAxisSteps - i) / yAxisSteps) * 100}%` }}></div>
-                              ))}
-                            </div>
-                            
-                            {/* Data bars */}
-                            <div className="horizontal-bars">
-                              {data.map((d) => {
-                                const totalHeightPct = Math.round((d.total / maxRange) * 100);
-                                const settledHeightPct = d.total > 0 ? Math.round((d.settled / d.total) * totalHeightPct) : 0;
-                                
-                                return (
-                                  <div key={d.monthKey} className="horizontal-bar">
-                                    <div className="date-label">{d.monthLabel}</div>
-                                    <div className="bar-container">
-                                      <div 
-                                        className="horizontal-bar-fill bar-fill-settled" 
-                                        style={{ height: `${settledHeightPct}%` }} 
-                                        title={`Settled: ₹${d.settled.toLocaleString('en-IN')}`}
-                                      ></div>
-                                      <div 
-                                        className="horizontal-bar-fill bar-fill-unsettled" 
-                                        style={{ height: `${totalHeightPct - settledHeightPct}%` }} 
-                                        title={`Unsettled: ₹${d.unsettled.toLocaleString('en-IN')}`}
-                                      ></div>
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
+                        <div className="chart-container" style={{ height: 320 }}>
+                          <Bar data={data} options={options} />
                         </div>
-                      )
+                      );
                     })()}
                   </div>
                 </div>
