@@ -14,6 +14,17 @@ export const API_ENDPOINTS = {
   CASHFREE_SETTLEMENTS: `${API_BASE_URL}/api/cashfree/settlements`,
   CASHFREE_SETTLEMENTS_ALL: `${API_BASE_URL}/api/cashfree/settlements/all`,
   CASHFREE_SETTLEMENTS_BY_DATE: (startDate, endDate) => `${API_BASE_URL}/api/cashfree/settlements/${startDate}/${endDate}`,
+
+  // Explore endpoints
+  EXPLORE_REVENUE: (canteenId, start, end) => `${API_BASE_URL}/api/explore/canteen/${canteenId}/revenue?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`,
+  NET_PROFITS_BY_SETTLEMENTS: (canteenId, start, end) => {
+    const base = `${API_BASE_URL}/api/explore/canteen/${canteenId}/net-profits`;
+    const params = new URLSearchParams();
+    if (start) params.set('start', start);
+    if (end) params.set('end', end);
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
+  },
 };
 
 export default API_BASE_URL;

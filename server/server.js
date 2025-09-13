@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
 import canteenRoutes from './routes/canteenRoutes.js';
 import cashfreeRoutes from './routes/cashfreeRoutes.js';
+import exploreRoutes from './routes/exploreRoutes.js';
 
 dotenv.config()
 
@@ -64,6 +65,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/summary', summaryRoutes);
 app.use('/api/canteens', canteenRoutes);
 app.use('/api/cashfree', cashfreeRoutes);
+app.use('/api/explore', exploreRoutes);
 
 app.get('/health', async (req, res) => {
   const dbStatus = await checkDatabaseConnection()

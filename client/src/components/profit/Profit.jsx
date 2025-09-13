@@ -32,8 +32,14 @@ const Profit = ({ canteenId = null }) => {
   const [showFilter, setShowFilter] = useState(false);
   const filterRef = React.useRef(null);
 
+  // Net profits by Cashfree settlement periods
+  const [netProfits, setNetProfits] = useState(null);
+  const [netLoading, setNetLoading] = useState(true);
+  const [netError, setNetError] = useState(null);
+
   useEffect(() => {
     fetchGrossProfitData();
+    fetchNetProfitsData();
   }, [canteenId, startDate, endDate]);
 
   useEffect(() => {
@@ -85,6 +91,25 @@ const Profit = ({ canteenId = null }) => {
     }
   };
 
+  const fetchNetProfitsData = async () => {
+    try {
+      setNetLoading(true);
+      setNetError(null);
+      const url = API_ENDPOINTS.NET_PROFITS_BY_SETTLEMENTS(canteenId || 'all', startDate || '', endDate || '');
+      const response = await authFetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch net profits');
+      }
+      const data = await response.json();
+      setNetProfits(data);
+    } catch (err) {
+      setNetError('Failed to load net profits. Please try again later.');
+      console.error('Error fetching net profits:', err);
+    } finally {
+      setNetLoading(false);
+    }
+  };
+
   const formatAmount = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -116,6 +141,7 @@ const Profit = ({ canteenId = null }) => {
   });
 
   const totalGrossProfit = sortedData.reduce((sum, item) => sum + Number(item.gross_profit), 0);
+  const totalNetProfit = netProfits?.totals?.net_profit || 0;
 
   // Chart data preparation
   const getDailyChartData = () => {
@@ -315,6 +341,10 @@ const Profit = ({ canteenId = null }) => {
           <div className="stat-value">{formatAmount(totalGrossProfit)}</div>
         </div>
         <div className="stat-card">
+          <h3>Total Net Profit</h3>
+          <div className="stat-value">{netLoading ? '—' : formatAmount(totalNetProfit)}</div>
+        </div>
+        <div className="stat-card">
           <h3>Days with Data</h3>
           <div className="stat-value">{sortedData.length}</div>
         </div>
@@ -364,6 +394,49 @@ const Profit = ({ canteenId = null }) => {
           </table>
         </div>
       )}
+
+      {/* Net Profits by Cashfree Settlement Periods */}
+      <div className="chart-spacer"></div>
+      <div className="net-profit-periods">
+        <h3>Net Profits by Settlement Period</h3>
+        {netError && (
+          <div className="error-message" style={{ marginTop: '0.5rem' }}>{netError}</div>
+        )}
+        {netLoading ? (
+          <div className="loading" style={{ padding: '0.5rem 0' }}>Loading net profits…</div>
+        ) : !netProfits || (netProfits?.periods?.length || 0) === 0 ? (
+          <div className="no-data">No settlement periods found for the selected range.</div>
+        ) : (
+          <div className="table-container">
+            <table className="net-profit-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>From</th>
+                  <th>Till</th>
+                  <th>Revenue (₹)</th>
+                  <th>Settlement (₹)</th>
+                  <th>Net Profit (₹)</th>
+                  <th>UTR</th>
+                </tr>
+              </thead>
+              <tbody>
+                {netProfits.periods.map((p, idx) => (
+                  <tr key={`${p.start}-${p.end}-${p.utr || idx}`}>
+                    <td>{idx + 1}</td>
+                    <td>{new Date(p.start).toLocaleString('en-IN')}</td>
+                    <td>{new Date(p.end).toLocaleString('en-IN')}</td>
+                    <td>{formatAmount(p.revenue)}</td>
+                    <td>{formatAmount(p.settlement)}</td>
+                    <td className={Number(p.net_profit) >= 0 ? 'positive' : 'negative'}>{formatAmount(p.net_profit)}</td>
+                    <td>{p.utr || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Charts Section */}
       {sortedData.length > 0 && (

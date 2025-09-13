@@ -14,7 +14,12 @@ export async function getDailyRevenueByCanteen(canteenId) {
           END
         ), 0)) AS total_revenue,
         COUNT(*) AS orders_count,
-        FLOOR(COALESCE(SUM(order_subtotal * 0.95), 0)) AS net_payout
+        FLOOR(COALESCE(SUM(
+          CASE 
+            WHEN ? = 2 THEN order_subtotal * 1.0
+            ELSE order_subtotal * 0.95
+          END
+        ), 0)) AS net_payout
     FROM (
         SELECT 
           orderTime,
@@ -37,7 +42,7 @@ export async function getDailyRevenueByCanteen(canteenId) {
     ) o
     GROUP BY DATE_FORMAT(orderTime, '%Y-%m-%d')
     ORDER BY order_date DESC`,
-    [canteenId]
+    [canteenId, canteenId]
   )
   return rows
 }

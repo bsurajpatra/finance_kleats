@@ -54,7 +54,7 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
     // Direct id-based overrides
     if (String(canteen.CanteenId) === '2') {
       try {
-        return new URL('../../assets/naturals.jpeg', import.meta.url).toString();
+        return new URL('../../assets/sih.png', import.meta.url).toString();
       } catch (_) {
         // fall through to name-based resolution
       }
