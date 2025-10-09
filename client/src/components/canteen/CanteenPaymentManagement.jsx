@@ -11,6 +11,8 @@ import {
   Legend,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // Register Chart.js elements once
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -57,6 +59,18 @@ const CanteenPaymentManagement = ({ onNavVisibilityChange, onEnterSettlements, o
         return new URL('../../assets/sih.png', import.meta.url).toString();
       } catch (_) {
         // fall through to name-based resolution
+      }
+    }
+
+    const getCanteenImage = (canteen) => {
+      if (!canteen) return null;
+      // Direct id-based overrides
+      if (String(canteen.CanteenId) === '3') {
+        try {
+          return new URL('../../assets/naturals.jpeg', import.meta.url).toString();
+        } catch (_) {
+          // fall through to name-based resolution
+        }
       }
     }
     // Name-based resolution
