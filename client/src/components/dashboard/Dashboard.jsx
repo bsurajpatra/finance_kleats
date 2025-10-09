@@ -52,19 +52,19 @@ const Dashboard = ({ onLogout, activeTab, onTabChange }) => {
           className={`nav-tab ${activeTab === 'profit' ? 'active' : ''}`}
           onClick={() => onTabChange('profit')}
         >
-          Gross Profits
+          Profits
         </button>
         <button 
           className={`nav-tab ${activeTab === 'canteen' ? 'active' : ''}`}
           onClick={() => onTabChange('canteen')}
         >
-          Payments
+          Canteen Payments
         </button>
         <button 
           className={`nav-tab ${activeTab === 'settlements' ? 'active' : ''}`}
           onClick={() => onTabChange('settlements')}
         >
-          Settlements
+          Gateway Settlements
         </button>
       </nav>
       )}

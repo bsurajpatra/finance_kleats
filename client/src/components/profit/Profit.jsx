@@ -11,6 +11,8 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import './Profit.css';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 // Register Chart.js components
 ChartJS.register(
@@ -29,8 +31,14 @@ const Profit = ({ canteenId = null }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest first
-  const [showFilter, setShowFilter] = useState(false);
-  const filterRef = React.useRef(null);
+  const [showGrossFilter, setShowGrossFilter] = useState(false);
+  const [showNetFilter, setShowNetFilter] = useState(false);
+  const [showGrossExport, setShowGrossExport] = useState(false);
+  const [showNetExport, setShowNetExport] = useState(false);
+  const grossFilterRef = React.useRef(null);
+  const netFilterRef = React.useRef(null);
+  const grossExportRef = React.useRef(null);
+  const netExportRef = React.useRef(null);
 
   // Net profits by Cashfree settlement periods
   const [netProfits, setNetProfits] = useState(null);
@@ -44,17 +52,25 @@ const Profit = ({ canteenId = null }) => {
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (filterRef.current && !filterRef.current.contains(event.target)) {
-        setShowFilter(false);
+      if (grossFilterRef.current && !grossFilterRef.current.contains(event.target)) {
+        setShowGrossFilter(false);
+      }
+      if (netFilterRef.current && !netFilterRef.current.contains(event.target)) {
+        setShowNetFilter(false);
+      }
+      if (grossExportRef.current && !grossExportRef.current.contains(event.target)) {
+        setShowGrossExport(false);
+      }
+      if (netExportRef.current && !netExportRef.current.contains(event.target)) {
+        setShowNetExport(false);
       }
     }
-    if (showFilter) {
+    const shouldListen = showGrossFilter || showNetFilter || showGrossExport || showNetExport;
+    if (shouldListen) {
       document.addEventListener('mousedown', handleClickOutside);
-    } else {
-      document.removeEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showFilter]);
+  }, [showGrossFilter, showNetFilter, showGrossExport, showNetExport]);
 
   const fetchGrossProfitData = async () => {
     try {
@@ -142,6 +158,114 @@ const Profit = ({ canteenId = null }) => {
 
   const totalGrossProfit = sortedData.reduce((sum, item) => sum + Number(item.gross_profit), 0);
   const totalNetProfit = netProfits?.totals?.net_profit || 0;
+
+  // Export helpers - Gross
+  const exportGrossToCSV = () => {
+    const headers = ['S.No.', 'Date', 'Gross Profit (₹)'];
+    const rows = sortedData.map((item, index) => [
+      index + 1,
+      new Date(item.order_date).toLocaleDateString('en-IN'),
+      Number(item.gross_profit || 0).toFixed(2)
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(f => `"${String(f).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'gross-profit.csv'; a.click(); URL.revokeObjectURL(url);
+  };
+
+  const exportGrossToTXT = () => {
+    let txt = 'GROSS PROFIT REPORT\n' + '='.repeat(60) + '\n\n';
+    txt += `Generated on: ${new Date().toLocaleString('en-IN')}\n`;
+    txt += `Total Records: ${sortedData.length}\n\n`;
+    txt += ['S.No.', 'Date', 'Gross Profit (₹)'].join('\t') + '\n';
+    txt += '-'.repeat(80) + '\n';
+    sortedData.forEach((item, index) => {
+      txt += [
+        index + 1,
+        new Date(item.order_date).toLocaleDateString('en-IN'),
+        Number(item.gross_profit || 0).toFixed(2)
+      ].join('\t') + '\n';
+    });
+    const blob = new Blob([txt], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'gross-profit.txt'; a.click(); URL.revokeObjectURL(url);
+  };
+
+  const exportGrossToPDF = () => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'A4' });
+    doc.setFontSize(14);
+    doc.text('Gross Profit Report', 40, 40);
+    const headers = [['S.No.', 'Date', 'Gross Profit (₹)']];
+    const body = sortedData.map((item, index) => [
+      index + 1,
+      new Date(item.order_date).toLocaleDateString('en-IN'),
+      Number(item.gross_profit || 0).toFixed(2)
+    ]);
+    doc.autoTable({ head: headers, body, startY: 60, styles: { fontSize: 9, cellPadding: 4 } });
+    doc.save('gross-profit.pdf');
+  };
+
+  // Export helpers - Net
+  const exportNetToCSV = () => {
+    const periods = netProfits?.periods || [];
+    const headers = ['S.No.', 'From', 'Till', 'Revenue (₹)', 'Settlement (₹)', 'Net Profit (₹)'];
+    const rows = periods.map((p, idx) => [
+      idx + 1,
+      new Date(p.start).toLocaleString('en-IN'),
+      new Date(p.end).toLocaleString('en-IN'),
+      Number(p.revenue || 0).toFixed(2),
+      Number(p.settlement || 0).toFixed(2),
+      Number(p.net_profit || 0).toFixed(2)
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(f => `"${String(f).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'net-profit-by-settlement.csv'; a.click(); URL.revokeObjectURL(url);
+  };
+
+  const exportNetToTXT = () => {
+    const periods = netProfits?.periods || [];
+    let txt = 'NET PROFIT BY SETTLEMENT REPORT\n' + '='.repeat(60) + '\n\n';
+    txt += `Generated on: ${new Date().toLocaleString('en-IN')}\n`;
+    txt += `Total Records: ${periods.length}\n\n`;
+    txt += ['S.No.', 'From', 'Till', 'Revenue (₹)', 'Settlement (₹)', 'Net Profit (₹)'].join('\t') + '\n';
+    txt += '-'.repeat(120) + '\n';
+    periods.forEach((p, idx) => {
+      txt += [
+        idx + 1,
+        new Date(p.start).toLocaleString('en-IN'),
+        new Date(p.end).toLocaleString('en-IN'),
+        Number(p.revenue || 0).toFixed(2),
+        Number(p.settlement || 0).toFixed(2),
+        Number(p.net_profit || 0).toFixed(2)
+      ].join('\t') + '\n';
+    });
+    const blob = new Blob([txt], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'net-profit-by-settlement.txt'; a.click(); URL.revokeObjectURL(url);
+  };
+
+  const exportNetToPDF = () => {
+    const periods = netProfits?.periods || [];
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'A4' });
+    doc.setFontSize(14);
+    doc.text('Net Profit by Settlement Report', 40, 40);
+    const headers = [['S.No.', 'From', 'Till', 'Revenue (₹)', 'Settlement (₹)', 'Net Profit (₹)']];
+    const body = periods.map((p, idx) => [
+      idx + 1,
+      new Date(p.start).toLocaleString('en-IN'),
+      new Date(p.end).toLocaleString('en-IN'),
+      Number(p.revenue || 0).toFixed(2),
+      Number(p.settlement || 0).toFixed(2),
+      Number(p.net_profit || 0).toFixed(2)
+    ]);
+    doc.autoTable({ head: headers, body, startY: 60, styles: { fontSize: 9, cellPadding: 4 } });
+    doc.save('net-profit-by-settlement.pdf');
+  };
 
   // Chart data preparation
   const getDailyChartData = () => {
@@ -247,7 +371,7 @@ const Profit = ({ canteenId = null }) => {
       <div className="net-profit-container">
         <div className="loading-spinner">
           <div className="spinner"></div>
-          <p>Loading gross profit data...</p>
+          <p>Loading profits data...</p>
         </div>
       </div>
     );
@@ -267,18 +391,36 @@ const Profit = ({ canteenId = null }) => {
   }
 
   return (
-    <div className="net-profit-container">
-      <div className="net-profit-header">
+    <div className="profit-two-col">
+      <div className="net-profit-container">
+        <div className="net-profit-header">
         <h2>Daily Gross Profit Report</h2>
         <div className="header-actions">
-          <div className="transactions-filter-dropdown-wrapper" ref={filterRef}>
+            <div className="settle-export" ref={grossExportRef}>
+              <div className="export-header">
+                <button
+                  className="export-toggle-btn"
+                  onClick={() => setShowGrossExport(prev => !prev)}
+                >
+                  <span>📊 Export</span>
+                </button>
+              </div>
+              {showGrossExport && (
+                <div className="export-dropdown">
+                  <button onClick={exportGrossToPDF} className="export-option">📋 Export as PDF</button>
+                  <button onClick={exportGrossToCSV} className="export-option">📊 Export as CSV</button>
+                  <button onClick={exportGrossToTXT} className="export-option">📄 Export as TXT</button>
+                </div>
+              )}
+            </div>
+          <div className="transactions-filter-dropdown-wrapper" ref={grossFilterRef}>
             <button
               className="transactions-filter-btn"
-              onClick={() => setShowFilter(prev => !prev)}
+              onClick={() => setShowGrossFilter(prev => !prev)}
             >
               Filter ▼
             </button>
-            {showFilter && (
+            {showGrossFilter && (
               <div className="transactions-filter-dropdown">
                 <div className="filter-section">
                   <label>
@@ -331,7 +473,7 @@ const Profit = ({ canteenId = null }) => {
             </svg>
           </button>
         </div>
-      </div>
+        </div>
 
       {/* Filters moved to header dropdown; removed inline filters-section */}
 
@@ -339,10 +481,6 @@ const Profit = ({ canteenId = null }) => {
         <div className="stat-card">
           <h3>Total Gross Profit</h3>
           <div className="stat-value">{formatAmount(totalGrossProfit)}</div>
-        </div>
-        <div className="stat-card">
-          <h3>Total Net Profit</h3>
-          <div className="stat-value">{netLoading ? '—' : formatAmount(totalNetProfit)}</div>
         </div>
         <div className="stat-card">
           <h3>Days with Data</h3>
@@ -356,87 +494,47 @@ const Profit = ({ canteenId = null }) => {
         </div>
       </div>
 
-      {sortedData.length === 0 ? (
-        <div className="no-data">
-          <div className="empty-icon">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
-              <path d="M12 6c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
-            </svg>
-          </div>
-          <p>No gross profit data found for the selected period.</p>
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="net-profit-table">
-            <thead>
-              <tr>
-                <th>S.No.</th>
-                <th>Date</th>
-                <th>Gross Profit (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedData.map((item, index) => (
-                <tr key={`${item.order_date}-${index}`} className="profit-row">
-                  <td className="sno-cell">
-                    {index + 1}
-                  </td>
-                  <td className="date-cell">
-                    {formatDate(item.order_date)}
-                  </td>
-                  <td className={`profit-cell ${Number(item.gross_profit) >= 0 ? 'positive' : 'negative'}`}>
-                    {formatAmount(item.gross_profit)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Net Profits by Cashfree Settlement Periods */}
-      <div className="chart-spacer"></div>
-      <div className="net-profit-periods">
-        <h3>Net Profits by Settlement Period</h3>
-        {netError && (
-          <div className="error-message" style={{ marginTop: '0.5rem' }}>{netError}</div>
-        )}
-        {netLoading ? (
-          <div className="loading" style={{ padding: '0.5rem 0' }}>Loading net profits…</div>
-        ) : !netProfits || (netProfits?.periods?.length || 0) === 0 ? (
-          <div className="no-data">No settlement periods found for the selected range.</div>
-        ) : (
-          <div className="table-container">
-            <table className="net-profit-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>From</th>
-                  <th>Till</th>
-                  <th>Revenue (₹)</th>
-                  <th>Settlement (₹)</th>
-                  <th>Net Profit (₹)</th>
-                  <th>UTR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {netProfits.periods.map((p, idx) => (
-                  <tr key={`${p.start}-${p.end}-${p.utr || idx}`}>
-                    <td>{idx + 1}</td>
-                    <td>{new Date(p.start).toLocaleString('en-IN')}</td>
-                    <td>{new Date(p.end).toLocaleString('en-IN')}</td>
-                    <td>{formatAmount(p.revenue)}</td>
-                    <td>{formatAmount(p.settlement)}</td>
-                    <td className={Number(p.net_profit) >= 0 ? 'positive' : 'negative'}>{formatAmount(p.net_profit)}</td>
-                    <td>{p.utr || '—'}</td>
+      {/* Gross Profit Table */}
+      <div>
+          {sortedData.length === 0 ? (
+            <div className="no-data">
+              <div className="empty-icon">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z"/>
+                  <path d="M12 6c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm0 4c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>
+                </svg>
+              </div>
+              <p>No gross profit data found for the selected period.</p>
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="net-profit-table">
+                <thead>
+                  <tr>
+                    <th>S.No.</th>
+                    <th>Date</th>
+                    <th>Gross Profit (₹)</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                </thead>
+                <tbody>
+                  {sortedData.map((item, index) => (
+                    <tr key={`${item.order_date}-${index}`} className="profit-row">
+                      <td className="sno-cell">
+                        {index + 1}
+                      </td>
+                      <td className="date-cell">
+                        {formatDate(item.order_date)}
+                      </td>
+                      <td className={`profit-cell ${Number(item.gross_profit) >= 0 ? 'positive' : 'negative'}`}>
+                        {formatAmount(item.gross_profit)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
 
       {/* Charts Section */}
       {sortedData.length > 0 && (
@@ -458,6 +556,202 @@ const Profit = ({ canteenId = null }) => {
           </div>
         </div>
       )}
+      </div>
+
+      {/* Second main container: Net Profits */}
+      <div className="net-profit-container">
+        <div className="net-profit-header">
+          <h2>Net Profits by Settlement Period</h2>
+          <div className="header-actions">
+            <div className="settle-export" ref={netExportRef}>
+              <div className="export-header">
+                <button
+                  className="export-toggle-btn"
+                  onClick={() => setShowNetExport(prev => !prev)}
+                >
+                  <span>📊 Export</span>
+                </button>
+              </div>
+              {showNetExport && (
+                <div className="export-dropdown">
+                  <button onClick={exportNetToPDF} className="export-option">📋 Export as PDF</button>
+                  <button onClick={exportNetToCSV} className="export-option">📊 Export as CSV</button>
+                  <button onClick={exportNetToTXT} className="export-option">📄 Export as TXT</button>
+                </div>
+              )}
+            </div>
+            <div className="transactions-filter-dropdown-wrapper" ref={netFilterRef}>
+              <button
+                className="transactions-filter-btn"
+                onClick={() => setShowNetFilter(prev => !prev)}
+              >
+                Filter ▼
+              </button>
+              {showNetFilter && (
+                <div className="transactions-filter-dropdown">
+                  <div className="filter-section">
+                    <label>
+                      Period:
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={e => setStartDate(e.target.value)}
+                        style={{ marginLeft: '0.5rem' }}
+                      />
+                      <span style={{ margin: '0 0.5rem' }}>to</span>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={e => setEndDate(e.target.value)}
+                      />
+                    </label>
+                  </div>
+                  <div className="filter-section">
+                    <button
+                      className="clear-filters-btn"
+                      onClick={handleClearFilters}
+                    >
+                      Clear Filters
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button 
+              className="net-profit-refresh-btn"
+              onClick={fetchNetProfitsData}
+              title="Refresh net profits"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+              </svg>
+            </button>
+            
+          </div>
+        </div>
+        <div className="summary-stats">
+          <div className="stat-card">
+            <h3>Total Net Profit</h3>
+            <div className="stat-value">{netLoading ? '—' : formatAmount(totalNetProfit)}</div>
+          </div>
+        </div>
+        <div>
+          {netError && (
+            <div className="error-message" style={{ marginTop: '0.5rem' }}>{netError}</div>
+          )}
+          {netLoading ? (
+            <div className="loading" style={{ padding: '0.5rem 0' }}>Loading net profits…</div>
+          ) : !netProfits || (netProfits?.periods?.length || 0) === 0 ? (
+            <div className="no-data">No settlement periods found for the selected range.</div>
+          ) : (
+            <div className="table-container">
+              <table className="net-profit-table">
+                <thead>
+                  <tr>
+                    <th>S.No.</th>
+                    <th>From</th>
+                    <th>Till</th>
+                    <th>Revenue (₹)</th>
+                    <th>Settlement (₹)</th>
+                    <th>Net Profit (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {netProfits.periods.map((p, idx) => (
+                    <tr key={`${p.start}-${p.end}-${p.utr || idx}`} className="profit-row">
+                      <td className="sno-cell">{idx + 1}</td>
+                      <td className="date-cell">{new Date(p.start).toLocaleString('en-IN')}</td>
+                      <td className="date-cell">{new Date(p.end).toLocaleString('en-IN')}</td>
+                      <td>{formatAmount(p.revenue)}</td>
+                      <td>{formatAmount(p.settlement)}</td>
+                      <td className={`profit-cell ${Number(p.net_profit) >= 0 ? 'positive' : 'negative'}`}>{formatAmount(p.net_profit)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Net Profit Charts */}
+        {!netLoading && (netProfits?.periods?.length || 0) > 0 && (
+          <div className="profit-charts" style={{ marginTop: '1.5rem' }}>
+            {/* Net Profit by Period */}
+            {(() => {
+              const data = (netProfits?.periods || [])
+                .slice()
+                .sort((a, b) => new Date(a.start) - new Date(b.start))
+                .map(p => ({
+                  label: new Date(p.start).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+                  value: Number(p.net_profit || 0)
+                }));
+
+              const chartData = {
+                labels: data.map(d => d.label),
+                datasets: [
+                  {
+                    label: 'Net Profit by Period',
+                    data: data.map(d => d.value),
+                    backgroundColor: data.map(d => d.value >= 0 ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)'),
+                    borderColor: data.map(d => d.value >= 0 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)'),
+                    borderWidth: 1,
+                  }
+                ]
+              };
+
+              return (
+                <div className="chart-card">
+                  <div className="chart-title">Net Profit by Period</div>
+                  <div className="chart-container">
+                    <Bar data={chartData} options={chartOptions} />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Monthly Net Profit (by settlement date or end date) */}
+            {(() => {
+              const monthMap = new Map();
+              (netProfits?.periods || []).forEach(p => {
+                const keyDate = p.settlement_date || p.end || p.start;
+                const dt = new Date(keyDate);
+                const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}`;
+                const prev = monthMap.get(key) || 0;
+                monthMap.set(key, prev + Number(p.net_profit || 0));
+              });
+
+              const rows = Array.from(monthMap.entries())
+                .sort((a, b) => new Date(a[0] + '-01') - new Date(b[0] + '-01'))
+                .map(([key, sum]) => ({
+                  label: new Date(key + '-01').toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }),
+                  value: Number(sum || 0)
+                }));
+
+              const chartData = {
+                labels: rows.map(r => r.label),
+                datasets: [
+                  {
+                    label: 'Monthly Net Profit',
+                    data: rows.map(r => r.value),
+                    backgroundColor: rows.map(r => r.value >= 0 ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)'),
+                    borderColor: rows.map(r => r.value >= 0 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)'),
+                    borderWidth: 1,
+                  }
+                ]
+              };
+
+              return (
+                <div className="chart-card">
+                  <div className="chart-title">Monthly Net Profit</div>
+                  <div className="chart-container">
+                    <Bar data={chartData} options={chartOptions} />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

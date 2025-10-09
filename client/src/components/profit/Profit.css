@@ -8,6 +8,36 @@
   margin: 0 auto;
 }
 
+/* Two-column layout for gross and net containers */
+.profit-two-col {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.profit-two-col > .net-profit-container {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+}
+
+/* Slightly adjust widths: make gross (first) a bit narrower and net (second) a bit wider */
+@media (min-width: 993px) {
+  .profit-two-col > .net-profit-container:nth-child(1) {
+    flex: 0.95 1 0;
+  }
+  .profit-two-col > .net-profit-container:nth-child(2) {
+    flex: 1.05 1 0;
+  }
+}
+
+@media (max-width: 992px) {
+  .profit-two-col {
+    flex-direction: column;
+  }
+}
+
 .net-profit-header {
   display: flex;
   justify-content: space-between;
@@ -27,10 +57,13 @@
 .header-actions {
   display: flex;
   gap: 1rem;
+  align-items: center;
 }
 
 .sort-btn,
-.net-profit-refresh-btn {
+.net-profit-refresh-btn,
+.transactions-filter-btn,
+.export-toggle-btn {
   background: #f44336;
   color: #fff;
   border: none;
@@ -40,13 +73,34 @@
   font-weight: 600;
   transition: all 0.2s;
   font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
 }
 
 .sort-btn:hover,
-.net-profit-refresh-btn:hover {
+.net-profit-refresh-btn:hover,
+.transactions-filter-btn:hover,
+.export-toggle-btn:hover {
   background: #d32f2f;
   transform: translateY(-1px);
 }
+
+/* Override: keep Filter button white with black text */
+.transactions-filter-btn {
+  background: #ffffff !important;
+  color: #222 !important;
+  border: 1px solid #e0e0e0;
+}
+
+.transactions-filter-btn:hover {
+  background: #f7f7f7 !important;
+  border-color: #d0d0d0;
+  transform: translateY(-1px);
+}
+
+/* Normalize export dropdown container margins in header to keep alignment */
+.settle-export .export-header { margin: 0; }
 
 .filters-section {
   display: flex;
@@ -145,6 +199,7 @@
   overflow-x: auto;
   border-radius: 8px;
   border: 1px solid #f0f0f0;
+  width: 100%;
 }
 
 .net-profit-table {
@@ -171,7 +226,6 @@
 .net-profit-table th:first-child,
 .net-profit-table td:first-child {
   text-align: center;
-  width: 80px;
 }
 
 .net-profit-table td {
@@ -214,6 +268,11 @@
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 2rem;
   margin-top: 2rem;
+}
+
+/* In Net Profit container, always stack charts vertically */
+.net-profit-container .profit-charts {
+  grid-template-columns: 1fr;
 }
 
 .chart-card {
@@ -285,6 +344,9 @@
   border-radius: 8px;
   border: 1px solid #f0f0f0;
 }
+
+/* Side-by-side containers for Gross and Net tables */
+/* Removed side containers; tables fill 100% of their parent */
 
 .empty-icon {
   width: 60px;
