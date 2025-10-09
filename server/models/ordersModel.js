@@ -14,12 +14,38 @@ export async function getDailyRevenueByCanteen(canteenId) {
           END
         ), 0)) AS total_revenue,
         COUNT(*) AS orders_count,
-        FLOOR(COALESCE(SUM(
-          CASE 
-            WHEN ? = 2 THEN order_subtotal * 1.0
-            ELSE order_subtotal * 0.95
-          END
-        ), 0)) AS net_payout
+        FLOOR(
+          COALESCE(SUM(
+            CASE 
+              WHEN ? = 2 THEN order_subtotal * 1.0
+              ELSE order_subtotal * 0.95
+            END
+          ), 0)
+          - (
+            CASE 
+              WHEN ? = 1 THEN 0.05 * (
+                SELECT COALESCE(SUM(
+                  (
+                    (SELECT SUM(
+                        CAST(JSON_UNQUOTE(JSON_EXTRACT(item, '$.price')) AS DECIMAL(10,2)) *
+                        CAST(JSON_UNQUOTE(JSON_EXTRACT(item, '$.quantity')) AS DECIMAL(10,2))
+                    )
+                    FROM JSON_TABLE(r.items, '$[*]' COLUMNS (
+                        item JSON PATH '$'
+                    )) jt2)
+                    + COALESCE(r.parcelPrice, 0)
+                  )
+                ), 0)
+                FROM orders r
+                WHERE r.canteenId = ?
+                  AND r.paymentStatus = 'REFUNDED'
+                  AND DATE_FORMAT(r.orderTime, '%Y-%m-%d') = DATE_FORMAT(o.orderTime, '%Y-%m-%d')
+                  AND r.orderTime >= '2025-09-01 00:00:00'
+              )
+              ELSE 0
+            END
+          )
+        ) AS net_payout
     FROM (
         SELECT 
           orderTime,
@@ -42,7 +68,7 @@ export async function getDailyRevenueByCanteen(canteenId) {
     ) o
     GROUP BY DATE_FORMAT(orderTime, '%Y-%m-%d')
     ORDER BY order_date DESC`,
-    [canteenId, canteenId]
+    [canteenId, canteenId, canteenId, canteenId]
   )
   return rows
 }

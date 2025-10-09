@@ -4,10 +4,32 @@ import { HttpsProxyAgent } from 'https-proxy-agent';
 
 function normalizeDateTime(value, isStart) {
   if (!value) return null;
+  
+  // Handle date-only format
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return isStart ? `${value} 00:00:00` : `${value} 23:59:59`;
   }
-  return value.replace('T', ' ');
+  
+  // Handle ISO datetime format (likely UTC from Cashfree)
+  if (value.includes('T')) {
+    const date = new Date(value);
+    // Convert UTC to IST (+05:30)
+    const istDate = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
+    return istDate.toISOString().replace('T', ' ').replace('Z', '');
+  }
+  
+  // Handle space-separated datetime format
+  if (value.includes(' ')) {
+    // If it doesn't have timezone info, assume it's UTC and convert to IST
+    if (!value.includes('+') && !value.includes('Z')) {
+      const date = new Date(value + 'Z'); // Treat as UTC
+      const istDate = new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
+      return istDate.toISOString().replace('T', ' ').replace('Z', '');
+    }
+    return value;
+  }
+  
+  return value;
 }
 
 function getExternalExploreBase() {
@@ -153,6 +175,8 @@ export async function getNetProfitsBySettlements(req, res) {
       const endDt = normalizeDateTime(p.till, false);
       
       console.log(`Processing period: ${startDt} to ${endDt}, settlement: ${p.amount_settled}`);
+      console.log(`Original Cashfree dates: ${p.from} to ${p.till}`);
+      console.log(`Converted IST dates: ${startDt} to ${endDt}`);
 
       let totalRevenue = 0;
       let revenueErrors = [];
