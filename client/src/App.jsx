@@ -62,6 +62,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<Navigate to="/signin" replace />} />
         <Route
           path="/signin"
           element={
@@ -84,7 +85,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route path="*" element={<Navigate to={isAuthenticated ? "/dashboard" : "/signin"} />} />
+        <Route path="*" element={<Navigate to="/signin" replace />} />
       </Routes>
     </Router>
   );
