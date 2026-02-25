@@ -34,10 +34,10 @@ async function createSshTunnelPool() {
 
       const tunnelServer = net.createServer((socket) => {
         sshClient.forwardOut(
-          '127.0.0.1',         // Source address
+          process.env.LOCAL_ADDRESS,         // Source address
           socket.remotePort,   // Source port
-          '127.0.0.1',         // Destination address (on the remote server)
-          3306,                // Destination port (MySQL default)
+          process.env.MYSQL_REMOTE_HOST, // Destination address (on the remote server)
+          Number(process.env.MYSQL_REMOTE_PORT), // Destination port (MySQL default)
           (err, stream) => {
             if (err) {
               console.error('❌ SSH Forwarding Error:', err);
@@ -62,14 +62,14 @@ async function createSshTunnelPool() {
       });
 
       // Listen on a random available port on localhost
-      tunnelServer.listen(0, '127.0.0.1', () => {
+      tunnelServer.listen(0, process.env.LOCAL_ADDRESS, () => {
         const localPort = tunnelServer.address().port;
         console.log(`✅ SSH Tunnel established on local port ${localPort}`);
 
         // Point the MySQL pool to the local tunnel server
         const pool = mysql.createPool({
           ...dbConfig,
-          host: '127.0.0.1',
+          host: process.env.LOCAL_ADDRESS,
           port: localPort
         });
 
